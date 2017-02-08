@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<workshop code="B" desc="一车间" remainder="0" defcemmentcode="">
+	</workshop>
+	<workshop code="C" desc="二车间" remainder="1" defcemmentcode="">
+	</workshop>
+	<workshop code="D" desc="砖瓦涵一车间" remainder="0" defcemmentcode="＃22">
+	</workshop>
+	<workshop code="G" desc="加气砖一车间" remainder="0" defcemmentcode="＃26">	
+	</workshop>	
+</config>

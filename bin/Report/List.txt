@@ -1,0 +1,11 @@
+*.报表文件描述
+
+*.HuaYan32: 	32.x化验单
+*.HuaYan32_R: 	32.x检验单
+*.HuaYan42: 	42.x化验单
+*.HuaYan42_R: 	42.x检验单
+*.HuaYan42_DJ:	42.x低碱
+*.HuaYan525:	52.5化验单
+*.HuaYan_gsl:	硅酸盐熟料
+*.HuaYan_qz:	砌筑水泥
+*.LadingBill:	提货单
