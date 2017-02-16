@@ -90,8 +90,8 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=../../Bin/DL_AICM_V3
-UnitOutputDir=../../Dcu/DL_SelfHelp
+OutputDir=../Bin/
+UnitOutputDir=../Dcu/
 PackageDLLOutputDir=
 PackageDCPOutputDir=
 SearchPath=../Common;Common;Forms
