@@ -172,7 +172,7 @@ function DeleteOrder(const nOrder: string): Boolean;
 //删除采购单
 //function ChangeLadingTruckNo(const nBill,nTruck: string): Boolean;
 ////更改提货车辆
-function SetOrderCard(const nOrder,nTruck: string; nVerify: Boolean): Boolean;
+function SetOrderCard(const nOrder,nTruck,nNewCard: string; nVerify: Boolean): Boolean;
 //为采购单办理磁卡
 function SaveOrderCard(const nOrder, nCard: string): Boolean;
 //保存采购单磁卡
@@ -277,6 +277,9 @@ function get_shoporders(const nXmlStr: string): string;
 
 function get_shoporderbyno(const nXmlStr: string): string;
 //根据订单号获取订单信息
+
+function get_shopPurchaseByno(const nXmlStr:string):string;
+//根据货单号获取供货信息
 
 function CallBusinessCommand(const nCmd: Integer; const nData,nExt: string;
   const nOut: PWorkerBusinessCommand; const nWarn: Boolean = True): Boolean;
@@ -1617,7 +1620,7 @@ end;
 //Date: 2014-09-17
 //Parm: 交货单;车牌号;校验制卡开关
 //Desc: 为nBill交货单制卡
-function SetOrderCard(const nOrder,nTruck: string; nVerify: Boolean): Boolean;
+function SetOrderCard(const nOrder,nTruck,nNewCard: string; nVerify: Boolean): Boolean;
 var nStr: string;
     nP: TFormCommandParam;
 begin
@@ -1635,6 +1638,7 @@ begin
   nP.FParamA := nOrder;
   nP.FParamB := nTruck;
   nP.FParamC := sFlag_Provide;
+  np.FParamD := nNewCard;
   CreateBaseFormItem(cFI_FormMakeCard, '', @nP);
   Result := (nP.FCommand = cCmd_ModalResult) and (nP.FParamA = mrOK);
 end;
@@ -2614,5 +2618,13 @@ begin
     Result := nOut.FData;
 end;
 
+//根据货单号获取供货信息
+function get_shopPurchaseByno(const nXmlStr:string):string;
+var nOut: TWorkerBusinessCommand;
+begin
+  Result := '';
+  if CallBusinessCommand(cBC_WeChat_get_shopPurchasebyNO, nXmlStr, '', @nOut,False) then
+    Result := nOut.FData;
+end;
 
 end.

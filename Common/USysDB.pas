@@ -330,6 +330,7 @@ ResourceString
 
   sTable_WebOrderMatch   = 'S_WebOrderMatch';        //商城订单映射
   sTable_SpecialCustomerCementcode   = 'S_SpecialCustomerCementcode';        //特殊客户水泥编号
+  sTable_PurchaseContract = 'P_PurchaseContract';    //采购合同
 
 const
   {*新建表*}

@@ -1,3 +1,7 @@
+{*******************************************************************************
+  作者: 289525016@163.com 2016-11-13
+  描述: 自助办卡窗口--葛洲坝当阳水泥有限公司
+*******************************************************************************}
 unit uNewCard;
 
 interface
@@ -172,7 +176,7 @@ begin
   end;
   FWorkshopList.Free;
   FreeAndNil(FDR);
-  fFormMain.Timer2.Enabled := True;
+  fFormMain.TimerInsertCard.Enabled := True;
 end;
 
 procedure TfFormNewCard.FormShow(Sender: TObject);

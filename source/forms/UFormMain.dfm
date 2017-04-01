@@ -6280,15 +6280,15 @@ object fFormMain: TfFormMain
     Left = 466
     Top = 16
   end
-  object Timer1: TTimer
+  object TimerReadCard: TTimer
     Enabled = False
-    OnTimer = Timer1Timer
+    OnTimer = TimerReadCardTimer
     Left = 494
     Top = 16
   end
-  object Timer2: TTimer
+  object TimerInsertCard: TTimer
     Enabled = False
-    OnTimer = Timer2Timer
+    OnTimer = TimerInsertCardTimer
     Left = 520
     Top = 16
   end

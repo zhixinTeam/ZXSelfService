@@ -20,7 +20,7 @@ type
     LabelNum: TcxLabel;
     LabelHint: TcxLabel;
     ComPort1: TComPort;
-    Timer1: TTimer;
+    TimerReadCard: TTimer;
     Panel1: TPanel;
     LabelTruck: TcxLabel;
     LabelDec: TcxLabel;
@@ -28,15 +28,15 @@ type
     LabelBill: TcxLabel;
     LabelOrder: TcxLabel;
     imgCard: TImage;
-    Timer2: TTimer;
+    TimerInsertCard: TTimer;
     imgPrint: TImage;
     PanelBottom: TPanel;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComPort1RxChar(Sender: TObject; Count: Integer);
-    procedure Timer1Timer(Sender: TObject);
+    procedure TimerReadCardTimer(Sender: TObject);
     procedure LabelTruckDblClick(Sender: TObject);
-    procedure Timer2Timer(Sender: TObject);
+    procedure TimerInsertCardTimer(Sender: TObject);
     procedure imgPrintClick(Sender: TObject);
     procedure imgCardClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -78,8 +78,8 @@ implementation
 
 uses
   IniFiles, ULibFun, CPortTypes, USysLoger, USysDB, USmallFunc, UDataModule,
-  UFormConn, uNewCard,USysConst,UClientWorker,UMITPacker,USysModule,USysBusiness,
-  UDataReport,UFormInputbox;
+  UFormConn, uZXNewCard,USysConst,UClientWorker,UMITPacker,USysModule,USysBusiness,
+  UDataReport,UFormInputbox, UCardTypeSelect,uZXNewPurchaseCard;
 
 type
   TReaderType = (ptT800, pt8142);
@@ -154,7 +154,7 @@ begin
     ShowMsg(nStr,sHint);
   end;
   FSzttceApi.ParentWnd := Self.Handle;
-  Timer2.Enabled := True;
+  TimerInsertcard.Enabled := True;
 
   FHotKeyMgr := THotKeyManager.Create(Self);
   FHotKeyMgr.OnHotKeyPressed := DoHotKeyHotKeyPressed;
@@ -245,11 +245,11 @@ begin
   end;
 end;
 
-procedure TfFormMain.Timer1Timer(Sender: TObject);
+procedure TfFormMain.TimerReadCardTimer(Sender: TObject);
 begin
   if FTimeCounter <= 0 then
   begin
-    Timer1.Enabled := False;
+    TimerReadCard.Enabled := False;
     FHYDan := '';
     FStockName := '';
     LabelDec.Caption := '';
@@ -263,7 +263,7 @@ begin
     LabelTon.Caption := '提货数量:';
     LabelHint.Caption := '请您刷卡';
     if FCardType=ctttce then FSzttceApi.ResetMachine;
-    Timer2.Enabled := True;
+    TimerInsertCard.Enabled := True;
   end else
   begin
     LabelDec.Caption := IntToStr(FTimeCounter) + ' ';
@@ -310,14 +310,14 @@ begin
 
   if (nCard = FLastCard) and (GetTickCount - FLastQuery < 8 * 1000) then
   begin
-    Timer2.Enabled := True;
+    TimerInsertCard.Enabled := True;
     LabelDec.Caption := '请不要频繁读卡';
     Exit;
   end;
 
   try
     FTimeCounter := 10;
-    Timer1.Enabled := True;
+    TimerReadCard.Enabled := True;
 
     nStr := 'Select * From %s Where L_Card=''%s''';
     nStr := Format(nStr, [sTable_Bill, nCard]);
@@ -490,7 +490,7 @@ begin
   FDM.ADOConn.Connected := False;
 end;
 
-procedure TfFormMain.Timer2Timer(Sender: TObject);
+procedure TfFormMain.TimerInsertCardTimer(Sender: TObject);
 begin
   FReadCardThread := TReadCardThread.Create(True);
   FReadCardThread.FreeOnTerminate := True;
@@ -529,25 +529,52 @@ begin
 end;
 
 procedure TfFormMain.imgCardClick(Sender: TObject);
+var
+  frmCardType:TfFormCardTypeSelect;
 begin
-  if not Timer2.Enabled then
+  if not TimerInsertCard.Enabled then
   begin
     ShowMsg('系统正在读卡，请稍候...',sHint);
     Exit;
   end;
-  if not Assigned(fFormNewCard) then
-  begin
-    fFormNewCard := TfFormNewCard.Create(nil);
-    fFormNewCard.SzttceApi := FSzttceApi;
-    fFormNewCard.SetControlsClear;
+  frmCardType := TfFormCardTypeSelect.Create(nil);
+  try
+    frmCardType.ShowModal;
+    if frmCardType.ModalResult=mrCancel then Exit;
+    if frmCardType.rgCardType.ItemIndex=0 then
+    begin
+      if not Assigned(fFormNewCard) then
+      begin
+        fFormNewCard := TfFormNewCard.Create(nil);
+        fFormNewCard.SzttceApi := FSzttceApi;
+        fFormNewCard.SetControlsClear;
+      end;
+      fFormNewCard.BringToFront;
+      fFormNewCard.Left := self.Left;
+      fFormNewCard.Top := self.Top;
+      fFormNewCard.Width := self.Width;
+      fFormNewCard.Height := self.Height;
+      fFormNewCard.Show;
+    end
+    else if frmCardType.rgCardType.ItemIndex=1 then
+    begin
+      if not Assigned(fFormNewPurchaseCard) then
+      begin
+        fFormNewPurchaseCard := TfFormNewPurchaseCard.Create(nil);
+        fFormNewPurchaseCard.SzttceApi := FSzttceApi;
+        fFormNewPurchaseCard.SetControlsClear;
+      end;
+      fFormNewPurchaseCard.BringToFront;
+      fFormNewPurchaseCard.Left := self.Left;
+      fFormNewPurchaseCard.Top := self.Top;
+      fFormNewPurchaseCard.Width := self.Width;
+      fFormNewPurchaseCard.Height := self.Height;
+      fFormNewPurchaseCard.Show;
+    end;
+    TimerInsertCard.Enabled := False;
+  finally
+    frmCardType.Free;
   end;
-  fFormNewCard.BringToFront;
-  fFormNewCard.Left := self.Left;
-  fFormNewCard.Top := self.Top;
-  fFormNewCard.Width := self.Width;
-  fFormNewCard.Height := self.Height;
-  fFormNewCard.Show;
-  Timer2.Enabled := False;
 end;
 
 procedure TfFormMain.FormResize(Sender: TObject);

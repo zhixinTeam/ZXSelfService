@@ -262,6 +262,19 @@ type
   end;
   //网上商城订单明细
 
+  PMallPurchaseItem = ^stMallPurchaseItem;
+  stMallPurchaseItem = record
+    FOrder_id:string; //商城ID
+    FProvID:string; //供应商ID
+    FProvName:string; //供应商名称
+    FGoodsID:string;  //物料编号
+    FGoodsname:string; //物料名称
+    FData:string; //数量
+    Ftracknumber:string; //车牌号
+    Fpurchasecontract_no:string;//合同编号
+  end;
+  //网上商城供货单明细
+
 //------------------------------------------------------------------------------
 var
   gPath: string;                                     //程序所在路径
