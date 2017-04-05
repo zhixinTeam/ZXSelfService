@@ -474,11 +474,18 @@ function TfFormNewCard.do_YT_GetBatchCode(
   const nWebOrderItem: stMallOrderItem): Boolean;
 var
   nInList,nOutList:TStrings;
-  nData:string;  
+  nData:string;
+  nIdx:Integer;
+  nCementRecords:TStrings;
+  nCementRecordItem:TStrings;
+  nCementValue,nOrderValue:Double;
 begin
   Result := False;
+  nOrderValue := StrToFloat(nWebOrderItem.FData);
   nInList := TStringList.Create;
   nOutList := TStringList.Create;
+  nCementRecords := TStringList.Create;
+  nCementRecordItem := TStringList.Create;
   try
     nInList.Values['XCB_Cement'] := nWebOrderItem.FGoodsID;
     nInList.Values['Value'] := nWebOrderItem.FData;
@@ -487,8 +494,23 @@ begin
       or (nOutList.Values['XCB_CementCodeID']='') then Exit;
     FCardData.Values['XCB_CementCode'] := nOutList.Values['XCB_CementCode'];
     FCardData.Values['XCB_CementCodeID'] := nOutList.Values['XCB_CementCodeID'];
+
+    nCementRecords.Text := PackerDecodeStr(nOutList.Values['XCB_CementRecords']);
+    for nIdx := 0 to nCementRecords.Count - 1 do
+    begin
+      nCementRecordItem.Text := PackerDecodeStr(nCementRecords[nIdx]);
+      nCementValue := StrToFloatDef(nCementRecordItem.Values['XCB_CementValue'],0);
+      if nCementValue-nOrderValue>0.00001 then
+      begin
+        FCardData.Values['XCB_CementCode'] := nCementRecordItem.Values['XCB_CementCode'];
+        FCardData.Values['XCB_CementCodeID'] := nCementRecordItem.Values['XCB_CementCodeID'];
+        Break;
+      end;
+    end;
     Result := True;
   finally
+    nCementRecordItem.Free;
+    nCementRecords.Free;
     nOutList.Free;
     nInList.Free;
   end;

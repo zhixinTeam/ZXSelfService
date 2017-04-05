@@ -31,6 +31,8 @@ type
     TimerInsertCard: TTimer;
     imgPrint: TImage;
     PanelBottom: TPanel;
+    imgPurchaseCard: TImage;
+    Image1: TImage;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComPort1RxChar(Sender: TObject; Count: Integer);
@@ -529,52 +531,43 @@ begin
 end;
 
 procedure TfFormMain.imgCardClick(Sender: TObject);
-var
-  frmCardType:TfFormCardTypeSelect;
 begin
   if not TimerInsertCard.Enabled then
   begin
     ShowMsg('系统正在读卡，请稍候...',sHint);
     Exit;
   end;
-  frmCardType := TfFormCardTypeSelect.Create(nil);
-  try
-    frmCardType.ShowModal;
-    if frmCardType.ModalResult=mrCancel then Exit;
-    if frmCardType.rgCardType.ItemIndex=0 then
+  if Sender=imgCard then
+  begin
+    if not Assigned(fFormNewCard) then
     begin
-      if not Assigned(fFormNewCard) then
-      begin
-        fFormNewCard := TfFormNewCard.Create(nil);
-        fFormNewCard.SzttceApi := FSzttceApi;
-        fFormNewCard.SetControlsClear;
-      end;
-      fFormNewCard.BringToFront;
-      fFormNewCard.Left := self.Left;
-      fFormNewCard.Top := self.Top;
-      fFormNewCard.Width := self.Width;
-      fFormNewCard.Height := self.Height;
-      fFormNewCard.Show;
-    end
-    else if frmCardType.rgCardType.ItemIndex=1 then
-    begin
-      if not Assigned(fFormNewPurchaseCard) then
-      begin
-        fFormNewPurchaseCard := TfFormNewPurchaseCard.Create(nil);
-        fFormNewPurchaseCard.SzttceApi := FSzttceApi;
-        fFormNewPurchaseCard.SetControlsClear;
-      end;
-      fFormNewPurchaseCard.BringToFront;
-      fFormNewPurchaseCard.Left := self.Left;
-      fFormNewPurchaseCard.Top := self.Top;
-      fFormNewPurchaseCard.Width := self.Width;
-      fFormNewPurchaseCard.Height := self.Height;
-      fFormNewPurchaseCard.Show;
+      fFormNewCard := TfFormNewCard.Create(nil);
+      fFormNewCard.SzttceApi := FSzttceApi;
+      fFormNewCard.SetControlsClear;
     end;
-    TimerInsertCard.Enabled := False;
-  finally
-    frmCardType.Free;
+    fFormNewCard.BringToFront;
+    fFormNewCard.Left := self.Left;
+    fFormNewCard.Top := self.Top;
+    fFormNewCard.Width := self.Width;
+    fFormNewCard.Height := self.Height;
+    fFormNewCard.Show;
+  end
+  else if Sender=imgPurchaseCard then
+  begin
+   if not Assigned(fFormNewPurchaseCard) then
+    begin
+      fFormNewPurchaseCard := TfFormNewPurchaseCard.Create(nil);
+      fFormNewPurchaseCard.SzttceApi := FSzttceApi;
+      fFormNewPurchaseCard.SetControlsClear;
+    end;
+    fFormNewPurchaseCard.BringToFront;
+    fFormNewPurchaseCard.Left := self.Left;
+    fFormNewPurchaseCard.Top := self.Top;
+    fFormNewPurchaseCard.Width := self.Width;
+    fFormNewPurchaseCard.Height := self.Height;
+    fFormNewPurchaseCard.Show;
   end;
+  TimerInsertCard.Enabled := False;
 end;
 
 procedure TfFormMain.FormResize(Sender: TObject);
@@ -606,8 +599,10 @@ begin
     LabelNum.Height := nItemHeigth;
     LabelHint.Height := nItemHeigth;
     imgCard.Height := nItemHeigth;
+    imgPurchaseCard.Height := nItemHeigth;
     imgPrint.Height := nItemHeigth;
     imgCard.Top := LabelHint.Top;
+    imgPurchaseCard.Top := LabelHint.Top;
     imgPrint.Top := LabelHint.Top;
 
     Self.Left := nLeft;

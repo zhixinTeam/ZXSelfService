@@ -262,7 +262,7 @@ begin
             +'<DATA>'
             +'<head>'
             +'<Factory>%s</Factory>'
-            +'<ProviderNo>%s</ProviderNo>'
+            +'<NO>%s</NO>'
             +'</head>'
             +'</DATA>';
 
