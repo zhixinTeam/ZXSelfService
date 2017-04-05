@@ -27,12 +27,15 @@ type
     LabelTon: TcxLabel;
     LabelBill: TcxLabel;
     LabelOrder: TcxLabel;
-    imgCard: TImage;
     TimerInsertCard: TTimer;
     imgPrint: TImage;
     PanelBottom: TPanel;
+    PanelBCenter: TPanel;
+    PanelBRight: TPanel;
+    PanelBLeft: TPanel;
+    imgCard: TImage;
+    Image3: TImage;
     imgPurchaseCard: TImage;
-    Image1: TImage;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComPort1RxChar(Sender: TObject; Count: Integer);

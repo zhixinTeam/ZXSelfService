@@ -197,10 +197,6 @@ begin
   col.Width := 150;
 
   col := lvOrders.Columns.Add;
-  col.Caption := '供应商';
-  col.Width := 200;
-
-  col := lvOrders.Columns.Add;
   col.Caption := '物料名称';
   col.Width := 200;
 
@@ -298,8 +294,7 @@ begin
     begin
       nListB.CommaText := nListA.Strings[i];
       FWebOrderItems[i].FOrder_id := nListB.Values['order_id'];
-      FWebOrderItems[i].Fpurchasecontract_no := nListB.Values['purchasecontract_no'];
-      FWebOrderItems[i].FProvID := nListB.Values['providernumber'];
+      FWebOrderItems[i].Fpurchasecontract_no := nListB.Values['ordernumber'];
       FWebOrderItems[i].FgoodsID := nListB.Values['goodsID'];
       FWebOrderItems[i].FGoodsname := nListB.Values['goodsname'];
       FWebOrderItems[i].FData := nListB.Values['data'];
@@ -322,7 +317,6 @@ begin
   nlistitem.Caption := nWebOrderItem.FOrder_id;
 
   nlistitem.SubItems.Add(nWebOrderItem.Fpurchasecontract_no);
-  nlistitem.SubItems.Add(nWebOrderItem.FProvName);
   nlistitem.SubItems.Add(nWebOrderItem.FGoodsname);
   nlistitem.SubItems.Add(nWebOrderItem.Ftracknumber);
   nlistitem.SubItems.Add(nWebOrderItem.FData);
@@ -362,7 +356,8 @@ begin
   //货单信息
   EditTruck.Text := nOrderItem.Ftracknumber;
   EditValue.Text := nOrderItem.FData;
-  
+
+  FWebOrderItems[FWebOrderIndex] := nOrderItem;
   BtnOK.Enabled := not nRepeat;
 end;
 
@@ -403,14 +398,8 @@ begin
       Exit;
     end;
 
-    if nWebOrderItem.FProvID<>FieldByName('provider_code').AsString then
-    begin
-      nMsg := '商城货单中供应商[%s]有误。';
-      nMsg := Format(nMsg,[nWebOrderItem.FProvName]);
-      ShowMsg(nMsg,sError);
-      Writelog(nMsg);
-      Exit;
-    end;
+    nWebOrderItem.FProvID := FieldByName('provider_code').AsString;
+    nWebOrderItem.FProvName := FieldByName('provider_name').AsString;
 
     if nWebOrderItem.FGoodsID<>FieldByName('con_materiel_Code').AsString then
     begin
@@ -424,13 +413,13 @@ begin
     nwebOrderValue := StrToFloatDef(nWebOrderItem.FData,0);
     FMaxQuantity := FieldByName('con_remain_quantity').AsFloat;
 
-    if (nwebOrderValue<=0.00001) then
-    begin
-      nMsg := '货单中提货数量格式有误。';
-      ShowMsg(nMsg,sError);
-      Writelog(nMsg);
-      Exit;
-    end;
+//    if (nwebOrderValue<=0.00001) then
+//    begin
+//      nMsg := '货单中提货数量格式有误。';
+//      ShowMsg(nMsg,sError);
+//      Writelog(nMsg);
+//      Exit;
+//    end;
 
     if nwebOrderValue-FMaxQuantity>0.00001 then
     begin
@@ -490,6 +479,7 @@ begin
     nList.Values['ProviderName'] := nOrderItem.FProvName;
     nList.Values['StockNO'] := nOrderItem.FGoodsID;
     nList.Values['StockName'] := nOrderItem.FGoodsname;
+    nList.Values['Value'] := EditValue.Text;
 
     nOrder := SaveOrder(PackerEncodeStr(nList.Text));
     if nOrder='' then
@@ -566,7 +556,8 @@ begin
 
   if Sender = EditValue then
   begin
-    Result := IsNumber(EditValue.Text, True) and (StrToFloat(EditValue.Text)>0);
+//    Result := IsNumber(EditValue.Text, True) and (StrToFloat(EditValue.Text)>0);
+    Result := IsNumber(EditValue.Text, True);
     if not Result then
     begin
       nHint := '请填写有效的办理量';
