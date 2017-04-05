@@ -58,6 +58,7 @@ type
     procedure btnQueryClick(Sender: TObject);
     procedure BtnOKClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure editWebOrderNoKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
     FSzttceApi:TSzttceApi; //发卡机驱动
@@ -510,7 +511,7 @@ begin
   ShowMsg(nHint,sHint);
   Writelog(nHint);
 
-  if not SetBillCard(nOrder, EditTruck.Text,nNewCardNo, True) then
+  if not SetOrderCard(nOrder, EditTruck.Text,nNewCardNo, True) then
   begin
     nHint := '采购单关联磁卡失败，请到开票窗口处理';
     ShowMsg(nHint,sHint);
@@ -572,6 +573,17 @@ begin
       nHint := '已超出可提货量';
       Writelog(nHint);
     end;
+  end;
+end;
+
+procedure TfFormNewPurchaseCard.editWebOrderNoKeyPress(Sender: TObject;
+  var Key: Char);
+begin
+  FAutoClose := gSysParam.FAutoClose_Mintue;
+  if Key=Char(vk_return) then
+  begin
+    key := #0;
+    btnQuery.Click;
   end;
 end;
 

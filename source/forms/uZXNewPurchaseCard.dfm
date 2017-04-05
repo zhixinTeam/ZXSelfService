@@ -63,6 +63,7 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
       Style.Font.Style = []
       Style.IsFontAssigned = True
       TabOrder = 1
+      OnKeyPress = editWebOrderNoKeyPress
       Height = 41
       Width = 377
     end
