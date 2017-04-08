@@ -133,6 +133,7 @@ end;
 procedure TfFormNewPurchaseCard.FormShow(Sender: TObject);
 begin
   SetControlsReadOnly;
+  btnOK.Enabled := False;
   EditTruck.Properties.Buttons[0].Visible := False;
   
   FAutoClose := gSysParam.FAutoClose_Mintue;
@@ -294,8 +295,8 @@ begin
     for i := 0 to nWebOrderCount-1 do
     begin
       nListB.CommaText := nListA.Strings[i];
-      FWebOrderItems[i].FOrder_id := nListB.Values['order_id'];
-      FWebOrderItems[i].Fpurchasecontract_no := nListB.Values['ordernumber'];
+      FWebOrderItems[i].FOrder_id := nListB.Values['ordernumber'];
+      FWebOrderItems[i].Fpurchasecontract_no := nListB.Values['fac_order_no'];
       FWebOrderItems[i].FgoodsID := nListB.Values['goodsID'];
       FWebOrderItems[i].FGoodsname := nListB.Values['goodsname'];
       FWebOrderItems[i].FData := nListB.Values['data'];
