@@ -482,6 +482,8 @@ begin
     nList.Values['StockNO'] := nOrderItem.FGoodsID;
     nList.Values['StockName'] := nOrderItem.FGoodsname;
     nList.Values['Value'] := EditValue.Text;
+    
+    nList.Values['WebOrderID'] := nWebOrderID;
 
     nOrder := SaveOrder(PackerEncodeStr(nList.Text));
     if nOrder='' then

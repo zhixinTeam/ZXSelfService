@@ -632,6 +632,7 @@ begin
       Values['IsVIP'] := Copy(GetCtrlData(EditType),1,1);
       Values['Seal'] := FCardData.Values['XCB_CementCodeID'];
       Values['HYDan'] := EditFQ.Text;
+      Values['WebOrderID'] := nWebOrderID;
       if PrintFH.Checked  then Values['PrintFH'] := sFlag_Yes;
     end;
     nBillData := PackerEncodeStr(nList.Text);
