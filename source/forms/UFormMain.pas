@@ -84,7 +84,8 @@ implementation
 uses
   IniFiles, ULibFun, CPortTypes, USysLoger, USysDB, USmallFunc, UDataModule,
   UFormConn, uZXNewCard,USysConst,UClientWorker,UMITPacker,USysModule,USysBusiness,
-  UDataReport,UFormInputbox, UCardTypeSelect,uZXNewPurchaseCard;
+  UDataReport,UFormInputbox, UCardTypeSelect,uZXNewPurchaseCard,UFormBarcodePrint,
+  UFormBase;
 
 type
   TReaderType = (ptT800, pt8142);
@@ -171,8 +172,8 @@ begin
   begin
     FDR := TFDR.Create(Application);
   end;  
-  imgPrint.Visible := False;
-  imgCard.Visible := gSysParam.FCanCreateCard;  
+//  imgPrint.Visible := False;
+  imgCard.Visible := gSysParam.FCanCreateCard;
 end;
 
 procedure TfFormMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -258,7 +259,7 @@ begin
     FHYDan := '';
     FStockName := '';
     LabelDec.Caption := '';
-    imgPrint.Visible := False;
+//    imgPrint.Visible := False;
 
     LabelBill.Caption := '交货单号:';
     LabelTruck.Caption := '车牌号码:';
@@ -370,7 +371,7 @@ begin
       LabelTruck.Caption := '车牌号码: ' + FieldByName('L_Truck').AsString;
       LabelStock.Caption := '品种名称: ' + FieldByName('L_StockName').AsString;
       LabelTon.Caption := '提货数量: ' + FieldByName('L_Value').AsString + '吨';
-      imgPrint.Visible := True;
+//      imgPrint.Visible := True;
     end;
 
     //--------------------------------------------------------------------------
@@ -513,23 +514,33 @@ begin
 end;
 
 procedure TfFormMain.imgPrintClick(Sender: TObject);
+var
+  nP: TFormCommandParam;
+  nHyDan,nStockname:string;
 begin
-  if FHYDan='' then
+  CreateBaseFormItem(cFI_FormBarCodePrint, '', @nP);
+  if (nP.FCommand = cCmd_ModalResult) and (nP.FParamA = mrOK) then
   begin
-    ShowMsg('当前品种无需打印化验单。',sHint);
-    Exit;
-  end;
-  
-  if not Assigned(FDR) then
-  begin
-    FDR := TFDR.Create(Application);
-  end;  
+    nHyDan := nP.FParamB;
+    nStockname := nP.FParamC;
+    if nHyDan='' then
+    begin
+      ShowMsg('当前品种无需打印化验单。',sHint);
+      Exit;
+    end;
 
-  if FHYDan<>'' then
-  begin
-    imgPrint.Visible := False;
-    FDefaultPrinterName := FDR.Report1.PrintOptions.Printer;
-    PrintHuaYanReport(FHYDan, FStockName, False);
+    if not Assigned(FDR) then
+    begin
+      FDR := TFDR.Create(Application);
+    end;
+
+    if PrintHuaYanReport(nHYDan, nStockName, False) then
+    begin
+      ShowMsg('打印成功，请在下方出纸口取走您的化验单',sHint);
+    end
+    else begin
+      ShowMsg('打印失败，请联系开票员补打',sHint);
+    end;
   end;
 end;
 
