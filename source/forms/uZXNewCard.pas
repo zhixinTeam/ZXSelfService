@@ -323,6 +323,7 @@ end;
 
 procedure TfFormNewCard.FormCreate(Sender: TObject);
 begin
+  editWebOrderNo.Properties.MaxLength := gSysParam.FWebOrderLength;
   FCardData := TStringList.Create;
   if not Assigned(FDR) then
   begin

@@ -232,7 +232,7 @@ begin
   begin
     FDR := TFDR.Create(Application);
   end;
-
+  editWebOrderNo.Properties.MaxLength := gSysParam.FWebOrderLength;
   InitListView;
   gSysParam.FUserID := 'AICM';
 end;

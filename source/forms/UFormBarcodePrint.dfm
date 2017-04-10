@@ -34,6 +34,7 @@ inherited fFormBarcodePrint: TfFormBarcodePrint
       Left = 90
       Top = 29
       ParentFont = False
+      Properties.OnChange = editWebOrderNoPropertiesChange
       Style.BorderColor = clWindowFrame
       Style.BorderStyle = ebs3D
       Style.Font.Charset = DEFAULT_CHARSET
@@ -124,5 +125,11 @@ inherited fFormBarcodePrint: TfFormBarcodePrint
         end
       end
     end
+  end
+  object TimerAutoClose: TTimer
+    Enabled = False
+    OnTimer = TimerAutoCloseTimer
+    Left = 528
+    Top = 89
   end
 end

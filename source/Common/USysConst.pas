@@ -236,6 +236,7 @@ type
     FCanCreateCard:Boolean;                          //是否允许自助办卡
     FSanZhuangACIM:Boolean;                          //散装是否允许自助办卡
     FAutoClose_Mintue:Integer;                       //用户自助办卡窗口自动关闭时间
+    FWebOrderLength:Integer;                         //微信商城订单长度
   end;
   //系统参数
 

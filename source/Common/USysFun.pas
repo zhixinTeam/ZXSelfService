@@ -84,6 +84,7 @@ begin
       FSanZhuangACIM := ReadBool(FProgID,'SanZhuangACIM',False);
       FCanCreateCard := ReadBool(FProgID,'CanCreateCard',False);
       FAutoClose_Mintue := ReadInteger(FProgID, 'AutoCloseMintue', 1);
+      FWebOrderLength := ReadInteger(FProgID, 'WebOrderLength', 20);
 
       FProberUser := 0;
       FVoiceUser := 0;

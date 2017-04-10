@@ -23,11 +23,15 @@ type
     dxLayout1Item4: TdxLayoutItem;
     btnClear: TcxButton;
     dxLayout1Item6: TdxLayoutItem;
+    TimerAutoClose: TTimer;
     procedure BtnOKClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
     procedure editWebOrderNoKeyPress(Sender: TObject; var Key: Char);
+    procedure TimerAutoCloseTimer(Sender: TObject);
+    procedure editWebOrderNoPropertiesChange(Sender: TObject);
   private
     { Private declarations }
+    FAutoClose:Integer;
     FParam: PFormCommandParam;
     function GetHYDan(const nwebOrderid:string; var nHYDan,nStockname:string):Boolean;
     procedure Writelog(nMsg:string);
@@ -57,6 +61,10 @@ begin
   if not Assigned(nParam) then Exit;
   with TfFormBarcodePrint.Create(Application) do
   try
+    editWebOrderNo.Properties.MaxLength := gSysParam.FWebOrderLength;
+    FAutoClose := 20;
+    TimerAutoClose.Interval := 1000;
+    TimerAutoClose.Enabled := True;
     ActiveControl := editWebOrderNo;
     FParam := nParam;
     FParam.FCommand := cCmd_ModalResult;
@@ -138,6 +146,7 @@ procedure TfFormBarcodePrint.btnClearClick(Sender: TObject);
 begin
   editWebOrderNo.Clear;
   self.ActiveControl := editWebOrderNo;
+  FAutoClose := 20;
 end;
 
 procedure TfFormBarcodePrint.Writelog(nMsg: string);
@@ -157,6 +166,21 @@ begin
     key := #0;
     btnok.Click;
   end;
+end;
+
+procedure TfFormBarcodePrint.TimerAutoCloseTimer(Sender: TObject);
+begin
+  if FAutoClose=0 then
+  begin
+    BtnExit.Click;
+  end;
+  Dec(FAutoClose);
+end;
+
+procedure TfFormBarcodePrint.editWebOrderNoPropertiesChange(
+  Sender: TObject);
+begin
+  FAutoClose := 20;
 end;
 
 initialization
