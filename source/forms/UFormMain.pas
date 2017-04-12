@@ -36,6 +36,7 @@ type
     imgCard: TImage;
     Image3: TImage;
     imgPurchaseCard: TImage;
+    TimerMachineMonitor: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComPort1RxChar(Sender: TObject; Count: Integer);
@@ -45,6 +46,7 @@ type
     procedure imgPrintClick(Sender: TObject);
     procedure imgCardClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
+    procedure TimerMachineMonitorTimer(Sender: TObject);
   private
     { Private declarations }
     FBuffer: string;
@@ -71,7 +73,10 @@ type
     FCursorShow:Boolean;
     FCardType:TCardType;
     procedure QueryCard(const nCard: string);
-    //查询卡信息      
+    //查询卡信息
+    function SaveMachineStatus(const nCode:integer;const nMsg:string):boolean;
+    function ResetMachineStatus:Boolean;
+    function MachineStatusError:boolean;
   end;
 
 var
@@ -551,6 +556,9 @@ begin
     ShowMsg('系统正在读卡，请稍候...',sHint);
     Exit;
   end;
+  
+  if MachineStatusError then Exit;
+  
   if Sender=imgCard then
   begin
     if not Assigned(fFormNewCard) then
@@ -627,6 +635,79 @@ begin
     imgPrint.Left := self.Width-imgprint.Width;
   finally
     nIni.Free;
+  end;
+end;
+
+function TfFormMain.SaveMachineStatus(const nCode:integer;const nMsg:string): boolean;
+var
+  nini:TIniFile;
+  nFileName:string;
+begin
+  Result := False;
+  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
+  if not FileExists(nFileName) then
+  begin
+    FileCreate(nFileName);
+  end;
+
+  nini := TIniFile.Create(nFileName);
+  try
+    nini.WriteInteger('status','errorcode',ncode);
+    nini.WriteString('status','errormsg',nMsg);
+    Result := True;
+  finally
+    nini.Free;
+  end;
+end;
+
+function TfFormMain.MachineStatusError: boolean;
+var
+  nini:TIniFile;
+  nFileName:string;
+  nCode, nMsg: string;
+  nStr:string;
+begin
+  Result := False;
+  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
+  if not FileExists(nFileName) then Exit;
+
+  nini := TIniFile.Create(nFileName);
+  try
+    nCode := nini.ReadString('status','errorcode','');
+    nMsg := nini.ReadString('status','errormsg','');
+    nStr := '发卡机状态错误，错误代码【%s】,错误信息【%s】,暂停该服务。';
+    nStr := Format(nStr,[ncode,nMsg]);
+    WriteLog(nStr);
+    ShowMsg(nStr,sHint);
+    Result := True;
+  finally
+    nini.Free;
+  end;
+end;
+
+function TfFormMain.ResetMachineStatus: Boolean;
+var
+  nFileName:string;
+begin
+  Result := False;
+  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
+  DeleteFile(nFileName);
+end;
+
+procedure TfFormMain.TimerMachineMonitorTimer(Sender: TObject);
+var
+  nFileName:string;
+  nMachineStatus:TMachineStatus;
+begin
+  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
+  if FileExists(nFileName) then
+  begin
+    FSzttceApi.GetCurrentStatus(nMachineStatus);
+    if (nMachineStatus.msCode=c_MachineStatus_CardBoxEmpty)
+    or (nMachineStatus.msCode=C_MachineStatus_OverlapedCard)
+    or (nMachineStatus.msCode=C_MaahineStatus_RecycleBoxFull1)
+    or (nMachineStatus.msCode=C_MaahineStatus_RecycleBoxFull2) then Exit;
+    ResetMachineStatus;
   end;
 end;
 

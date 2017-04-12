@@ -9018,4 +9018,10 @@ object fFormMain: TfFormMain
     Left = 520
     Top = 16
   end
+  object TimerMachineMonitor: TTimer
+    Interval = 2000
+    OnTimer = TimerMachineMonitorTimer
+    Left = 544
+    Top = 16
+  end
 end

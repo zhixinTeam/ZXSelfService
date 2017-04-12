@@ -71,9 +71,6 @@ type
     function ParseStateInfo:Boolean;
 //    procedure WriteLog(const nMsg:string);
 
-    //获取机器当前状态
-    function GetCurrentStatus(var nMachineStatus:TMachineStatus):Boolean;
-
     function InitApiInterface:Boolean;
     //回收卡片
     function RecycleCard:Boolean;
@@ -89,7 +86,9 @@ type
     function IssueOneCard(var nCardno:string):Boolean;
     //插卡后读卡，读完再退卡
     function ReadCardSerialNo(var nCardSerialNo:string):Boolean;
-
+    
+    //获取机器当前状态
+    function GetCurrentStatus(var nMachineStatus:TMachineStatus):Boolean;
     //是否插卡
     function IsInsertedCard:Boolean;
 
@@ -420,7 +419,7 @@ begin
   end;
   if nStr='0018' then
   begin
-    FMachineStatus.msDesc := '卡空';
+    FMachineStatus.msDesc := '卡箱已空';
     Exit;
   end;
   if nStr='0016' then
@@ -440,12 +439,12 @@ begin
   end;
   if nStr='0010' then
   begin
-    FMachineStatus.msDesc := '卡预空';
+    FMachineStatus.msDesc := '卡箱已空';
     Exit;
   end;
   if nStr='0008' then
   begin
-    FMachineStatus.msDesc := '卡空';
+    FMachineStatus.msDesc := '卡箱已空';
     Exit;
   end;
   if nStr='0004' then

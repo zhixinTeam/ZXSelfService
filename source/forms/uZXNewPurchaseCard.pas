@@ -506,9 +506,10 @@ begin
     nHint := Format(nHint,[FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg]);
     Writelog(nHint);
     ShowMsg(nHint,sHint);
+    fFormMain.SaveMachineStatus(FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg);
     Exit;
   end;
-
+  fFormMain.ResetMachineStatus;
   nHint := '发卡成功,卡号[ %s ],请收好您的卡片';
   nHint := Format(nHint,[nNewCardNo]);
   ShowMsg(nHint,sHint);
