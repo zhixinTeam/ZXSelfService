@@ -89,7 +89,7 @@ var
 implementation
 uses
   ULibFun,UBusinessPacker,USysLoger,UBusinessConst,UFormMain,USysBusiness,USysDB,
-  UAdjustForm,UFormCard,UFormBase,UDataReport,UDataModule,NativeXml;
+  UAdjustForm,UFormBase,UDataReport,UDataModule,NativeXml;
 {$R *.dfm}
 
 { TfFormNewPurchaseCard }
@@ -506,20 +506,22 @@ begin
     nHint := Format(nHint,[FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg]);
     Writelog(nHint);
     ShowMsg(nHint,sHint);
-    fFormMain.SaveMachineStatus(FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg);
+//    fFormMain.SaveMachineStatus(FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg);
     Exit;
   end;
-  fFormMain.ResetMachineStatus;
-  nHint := '发卡成功,卡号[ %s ],请收好您的卡片';
-  nHint := Format(nHint,[nNewCardNo]);
-  ShowMsg(nHint,sHint);
-  Writelog(nHint);
-
-  if not SetOrderCard(nOrder, EditTruck.Text,nNewCardNo, True) then
+//  fFormMain.ResetMachineStatus;
+  if not SaveOrderCard(nOrder,nNewCardNo) then
   begin
-    nHint := '采购单关联磁卡失败，请到开票窗口处理';
-    ShowMsg(nHint,sHint);
+    nHint := '卡号 [%s] 关联采购订单 [%s] 失败，请到开票窗口重新关联。';
+    nHint := Format(nHint,[nNewCardNo,nOrder]);
     Writelog(nHint);
+    ShowMsg(nHint,sHint);
+  end
+  else begin
+    nHint := '发卡成功,卡号[ %s ],请收好您的卡片';
+    nHint := Format(nHint,[nNewCardNo]);
+    Writelog(nHint);    
+    ShowMsg(nHint,sHint);
   end;
   Close;
 end;

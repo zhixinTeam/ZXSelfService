@@ -16,8 +16,10 @@ inherited fFormNormal: TfFormNormal
     Align = alClient
     TabOrder = 0
     TabStop = False
+    AutoContentSizes = [acsWidth, acsHeight]
+    LookAndFeel = FDM.dxLayoutWeb1
     object BtnOK: TButton
-      Left = 76
+      Left = 77
       Top = 96
       Width = 65
       Height = 22
@@ -35,35 +37,34 @@ inherited fFormNormal: TfFormNormal
       OnClick = BtnExitClick
     end
     object dxLayout1Group_Root: TdxLayoutGroup
-      AlignHorz = ahParentManaged
-      AlignVert = avParentManaged
-      CaptionOptions.Visible = False
-      ButtonOptions.Buttons = <>
+      ShowCaption = False
       Hidden = True
       ShowBorder = False
       object dxGroup1: TdxLayoutGroup
+        AutoAligns = [aaHorizontal]
         AlignVert = avClient
-        CaptionOptions.Text = #22522#26412#20449#24687
-        ButtonOptions.Buttons = <>
+        Caption = #22522#26412#20449#24687
       end
       object dxLayout1Group1: TdxLayoutGroup
+        AutoAligns = [aaHorizontal]
         AlignVert = avBottom
-        CaptionOptions.Visible = False
-        ButtonOptions.Buttons = <>
+        ShowCaption = False
         Hidden = True
         LayoutDirection = ldHorizontal
         ShowBorder = False
         object dxLayout1Item1: TdxLayoutItem
+          AutoAligns = [aaVertical]
           AlignHorz = ahRight
-          CaptionOptions.Text = 'Button1'
-          CaptionOptions.Visible = False
+          Caption = 'Button1'
+          ShowCaption = False
           Control = BtnOK
           ControlOptions.ShowBorder = False
         end
         object dxLayout1Item2: TdxLayoutItem
+          AutoAligns = [aaVertical]
           AlignHorz = ahRight
-          CaptionOptions.Text = 'Button2'
-          CaptionOptions.Visible = False
+          Caption = 'Button2'
+          ShowCaption = False
           Control = BtnExit
           ControlOptions.ShowBorder = False
         end

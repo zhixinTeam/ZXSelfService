@@ -111,7 +111,7 @@ var
 implementation
 uses
   ULibFun,UBusinessPacker,USysLoger,UBusinessConst,UFormMain,USysBusiness,USysDB,
-  UAdjustForm,UFormCard,UFormBase,UDataReport,UDataModule,NativeXml;
+  UAdjustForm,UFormBase,UDataReport,UDataModule,NativeXml;
 {$R *.dfm}
 
 { TfFormNewCard }
@@ -654,23 +654,33 @@ begin
     nHint := Format(nHint,[FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg]);
     Writelog(nHint);
     ShowMsg(nHint,sHint);
-    fFormMain.SaveMachineStatus(FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg);
+//    fFormMain.SaveMachineStatus(FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg);
     Exit;
   end;
-  fFormMain.ResetMachineStatus;
-  nHint := '发卡成功,卡号[ %s ],请收好您的卡片';
-  nHint := Format(nHint,[nNewCardNo]);
-  ShowMsg(nHint,sHint);
-  Writelog(nHint);
-  SetBillCard(nBillID, EditTruck.Text,nNewCardNo, True);
+//  fFormMain.ResetMachineStatus;
 
-  if nPrint then
-    PrintBillReport(nBillID, True);
-  //print report
+//  SetBillCard(nBillID, EditTruck.Text,nNewCardNo, True);
 
-  if IFPrintFYD then
-    PrintBillFYDReport(nBillID, True);
+  if not SaveBillCard(nBillID,nNewCardNo) then
+  begin
+    nHint := '卡号 [%s] 关联提货单 [%s] 失败，请到开票窗口重新关联。';
+    nHint := Format(nHint,[nNewCardNo,nBillID]);
+    Writelog(nHint);
+    ShowMsg(nHint,sHint);
+  end
+  else begin
+    nHint := '发卡成功,卡号[ %s ],请收好您的卡片';
+    nHint := Format(nHint,[nNewCardNo]);
+    Writelog(nHint);
+    ShowMsg(nHint,sHint);
+    
+    if nPrint then
+      PrintBillReport(nBillID, True);
+    //print report
 
+    if IFPrintFYD then
+      PrintBillFYDReport(nBillID, True);
+  end;
   Close;
 end;
 

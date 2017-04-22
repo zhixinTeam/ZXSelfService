@@ -7,12 +7,11 @@ unit UDataModule;
 interface
 
 uses
-  SysUtils, Classes, DB, ADODB,Graphics,ULibFun, dxPSGlbl, dxPSUtl,
-  dxPSEngn, dxPrnPg, dxBkgnd, dxWrap, dxPrnDev, dxPSCompsProvider,
-  dxPSFillPatterns, dxPSEdgePatterns, dxPSPDFExportCore, dxPSPDFExport,
-  cxDrawTextUtils, dxPSPrVwStd, dxPScxEditorProducers,
-  dxPScxExtEditorProducers, dxPScxPageControlProducer, dxPSCore,
-  dxPScxCommon, dxPScxGrid6Lnk;
+  Windows, Graphics, SysUtils, Classes, dxPSGlbl, dxPSUtl, dxPSEngn,
+  dxPrnPg, ULibFun, dxWrap, dxPrnDev, dxPSCompsProvider, dxPSFillPatterns,
+  dxPSEdgePatterns, cxLookAndFeels, dxPSCore, dxPScxCommon, dxPScxGrid6Lnk,
+  XPMan, dxLayoutLookAndFeels, cxEdit, ImgList, Controls, cxGraphics, DB,
+  ADODB, dxBkgnd;
 
 type
   TFDM = class(TDataModule)

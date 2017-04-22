@@ -74,9 +74,9 @@ type
     FCardType:TCardType;
     procedure QueryCard(const nCard: string);
     //查询卡信息
-    function SaveMachineStatus(const nCode:integer;const nMsg:string):boolean;
-    function ResetMachineStatus:Boolean;
-    function MachineStatusError:boolean;
+//    function SaveMachineStatus(const nCode:integer;const nMsg:string):boolean;
+//    function ResetMachineStatus:Boolean;
+//    function MachineStatusError:boolean;
   end;
 
 var
@@ -179,6 +179,7 @@ begin
   end;  
 //  imgPrint.Visible := False;
   imgCard.Visible := gSysParam.FCanCreateCard;
+  TimerMachineMonitor.Enabled := False;
 end;
 
 procedure TfFormMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -557,8 +558,8 @@ begin
     Exit;
   end;
   
-  if MachineStatusError then Exit;
-  
+//  if MachineStatusError then Exit;
+
   if Sender=imgCard then
   begin
     if not Assigned(fFormNewCard) then
@@ -638,61 +639,61 @@ begin
   end;
 end;
 
-function TfFormMain.SaveMachineStatus(const nCode:integer;const nMsg:string): boolean;
-var
-  nini:TIniFile;
-  nFileName:string;
-begin
-  Result := False;
-  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
-  if not FileExists(nFileName) then
-  begin
-    FileCreate(nFileName);
-  end;
-
-  nini := TIniFile.Create(nFileName);
-  try
-    nini.WriteInteger('status','errorcode',ncode);
-    nini.WriteString('status','errormsg',nMsg);
-    Result := True;
-  finally
-    nini.Free;
-  end;
-end;
-
-function TfFormMain.MachineStatusError: boolean;
-var
-  nini:TIniFile;
-  nFileName:string;
-  nCode, nMsg: string;
-  nStr:string;
-begin
-  Result := False;
-  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
-  if not FileExists(nFileName) then Exit;
-
-  nini := TIniFile.Create(nFileName);
-  try
-    nCode := nini.ReadString('status','errorcode','');
-    nMsg := nini.ReadString('status','errormsg','');
-    nStr := '发卡机状态错误，错误代码【%s】,错误信息【%s】,暂停该服务。';
-    nStr := Format(nStr,[ncode,nMsg]);
-    WriteLog(nStr);
-    ShowMsg(nStr,sHint);
-    Result := True;
-  finally
-    nini.Free;
-  end;
-end;
-
-function TfFormMain.ResetMachineStatus: Boolean;
-var
-  nFileName:string;
-begin
-  Result := False;
-  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
-  DeleteFile(nFileName);
-end;
+//function TfFormMain.SaveMachineStatus(const nCode:integer;const nMsg:string): boolean;
+//var
+//  nini:TIniFile;
+//  nFileName:string;
+//begin
+//  Result := False;
+//  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
+//  if not FileExists(nFileName) then
+//  begin
+//    FileCreate(nFileName);
+//  end;
+//
+//  nini := TIniFile.Create(nFileName);
+//  try
+//    nini.WriteInteger('status','errorcode',ncode);
+//    nini.WriteString('status','errormsg',nMsg);
+//    Result := True;
+//  finally
+//    nini.Free;
+//  end;
+//end;
+//
+//function TfFormMain.MachineStatusError: boolean;
+//var
+//  nini:TIniFile;
+//  nFileName:string;
+//  nCode, nMsg: string;
+//  nStr:string;
+//begin
+//  Result := False;
+//  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
+//  if not FileExists(nFileName) then Exit;
+//
+//  nini := TIniFile.Create(nFileName);
+//  try
+//    nCode := nini.ReadString('status','errorcode','');
+//    nMsg := nini.ReadString('status','errormsg','');
+//    nStr := '发卡机状态错误，错误代码【%s】,错误信息【%s】,暂停该服务。';
+//    nStr := Format(nStr,[ncode,nMsg]);
+//    WriteLog(nStr);
+//    ShowMsg(nStr,sHint);
+//    Result := True;
+//  finally
+//    nini.Free;
+//  end;
+//end;
+//
+//function TfFormMain.ResetMachineStatus: Boolean;
+//var
+//  nFileName:string;
+//begin
+//  Result := False;
+//  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
+//  DeleteFile(nFileName);
+//end;
 
 procedure TfFormMain.TimerMachineMonitorTimer(Sender: TObject);
 var
@@ -707,7 +708,7 @@ begin
     or (nMachineStatus.msCode=C_MachineStatus_OverlapedCard)
     or (nMachineStatus.msCode=C_MaahineStatus_RecycleBoxFull1)
     or (nMachineStatus.msCode=C_MaahineStatus_RecycleBoxFull2) then Exit;
-    ResetMachineStatus;
+//    ResetMachineStatus;
   end;
 end;
 

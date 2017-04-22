@@ -115,9 +115,8 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
       Align = alClient
       TabOrder = 0
       TabStop = False
-      OptionsItem.AutoControlTabOrders = False
       object BtnOK: TButton
-        Left = 565
+        Left = 282
         Top = 199
         Width = 250
         Height = 41
@@ -132,7 +131,7 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
         OnClick = BtnOKClick
       end
       object BtnExit: TButton
-        Left = 821
+        Left = 538
         Top = 199
         Width = 107
         Height = 41
@@ -147,7 +146,7 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
         OnClick = BtnExitClick
       end
       object EditValue: TcxTextEdit
-        Left = 538
+        Left = 423
         Top = 144
         ParentFont = False
         Style.BorderColor = clWindowFrame
@@ -160,10 +159,10 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
         Style.IsFontAssigned = True
         TabOrder = 4
         OnKeyPress = EditValueKeyPress
-        Width = 120
+        Width = 210
       end
       object EditCard: TcxTextEdit
-        Left = 538
+        Left = 423
         Top = 28
         ParentFont = False
         Properties.MaxLength = 15
@@ -177,7 +176,7 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
         Style.Font.Style = []
         Style.IsFontAssigned = True
         TabOrder = 1
-        Width = 125
+        Width = 206
       end
       object EditID: TcxTextEdit
         Left = 78
@@ -194,7 +193,7 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
         Style.Font.Style = []
         Style.IsFontAssigned = True
         TabOrder = 0
-        Width = 398
+        Width = 283
       end
       object EditCus: TcxTextEdit
         Left = 78
@@ -210,7 +209,7 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
         Style.Font.Style = []
         Style.IsFontAssigned = True
         TabOrder = 2
-        Width = 121
+        Width = 283
       end
       object EditTruck: TcxButtonEdit
         Left = 78
@@ -231,53 +230,39 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
         Style.ButtonStyle = bts3D
         Style.IsFontAssigned = True
         TabOrder = 3
-        Width = 227
+        Width = 283
       end
       object dxLayoutGroup1: TdxLayoutGroup
-        AlignHorz = ahLeft
-        AlignVert = avParentManaged
-        CaptionOptions.Visible = False
-        ButtonOptions.Buttons = <>
+        AutoAligns = [aaHorizontal]
+        ShowCaption = False
         Hidden = True
         ShowBorder = False
         object dxGroup1: TdxLayoutGroup
-          AlignHorz = ahLeft
-          AlignVert = avTop
-          CaptionOptions.Text = #22522#26412#20449#24687
-          ButtonOptions.Buttons = <>
+          AutoAligns = [aaVertical]
+          Caption = #22522#26412#20449#24687
           object dxGroupLayout1Group2: TdxLayoutGroup
-            CaptionOptions.Visible = False
-            ButtonOptions.Buttons = <>
+            ShowCaption = False
             Hidden = True
             LayoutDirection = ldHorizontal
             ShowBorder = False
             object dxLayoutGroup2: TdxLayoutGroup
+              AutoAligns = [aaVertical]
               AlignHorz = ahClient
-              ButtonOptions.Buttons = <>
+              ShowCaption = False
               Hidden = True
               ShowBorder = False
               object dxLayout1Group1: TdxLayoutGroup
-                ButtonOptions.Buttons = <>
+                ShowCaption = False
                 Hidden = True
                 LayoutDirection = ldHorizontal
                 ShowBorder = False
                 object dxLayout1Item5: TdxLayoutItem
-                  AlignHorz = ahLeft
-                  CaptionOptions.Text = #21512#21516#21333#21495
-                  SizeOptions.AssignedValues = [sovSizableHorz, sovSizableVert]
-                  SizeOptions.SizableHorz = True
-                  SizeOptions.SizableVert = True
-                  SizeOptions.Width = 454
+                  Caption = #21512#21516#21333#21495
                   Control = EditID
                   ControlOptions.ShowBorder = False
                 end
                 object dxLayout1Item9: TdxLayoutItem
-                  AlignHorz = ahLeft
-                  CaptionOptions.Text = #20379#24212#21830
-                  SizeOptions.AssignedValues = [sovSizableHorz, sovSizableVert]
-                  SizeOptions.SizableHorz = True
-                  SizeOptions.SizableVert = True
-                  SizeOptions.Width = 434
+                  Caption = #20379#24212#21830
                   Control = EditCard
                   ControlOptions.ShowBorder = False
                 end
@@ -285,68 +270,48 @@ object fFormNewPurchaseCard: TfFormNewPurchaseCard
             end
           end
           object dxlytmLayout1Item3: TdxLayoutItem
-            AlignHorz = ahLeft
-            CaptionOptions.Text = #21407#26448#26009
-            SizeOptions.AssignedValues = [sovSizableHorz, sovSizableVert]
-            SizeOptions.SizableHorz = True
-            SizeOptions.SizableVert = True
-            SizeOptions.Width = 892
+            AutoAligns = [aaVertical]
+            Caption = #21407#26448#26009
             Control = EditCus
             ControlOptions.ShowBorder = False
           end
         end
         object dxGroup2: TdxLayoutGroup
-          AlignHorz = ahLeft
-          AlignVert = avTop
-          CaptionOptions.Text = #36135#21333#20449#24687
-          ButtonOptions.Buttons = <>
+          AutoAligns = [aaVertical]
+          Caption = #36135#21333#20449#24687
           object dxGroupLayout1Group6: TdxLayoutGroup
-            CaptionOptions.Visible = False
-            ButtonOptions.Buttons = <>
+            ShowCaption = False
             Hidden = True
             LayoutDirection = ldHorizontal
             ShowBorder = False
             object dxlytmLayout1Item12: TdxLayoutItem
-              AlignHorz = ahLeft
-              CaptionOptions.Text = #25552#36135#36710#36742':'
-              SizeOptions.AssignedValues = [sovSizableHorz, sovSizableVert]
-              SizeOptions.SizableHorz = True
-              SizeOptions.SizableVert = True
-              SizeOptions.Width = 454
+              Caption = #25552#36135#36710#36742':'
               Control = EditTruck
               ControlOptions.ShowBorder = False
             end
             object dxLayout1Item8: TdxLayoutItem
-              AlignHorz = ahLeft
-              CaptionOptions.Text = #21150#29702#21544#25968':'
-              SizeOptions.AssignedValues = [sovSizableHorz, sovSizableVert]
-              SizeOptions.SizableHorz = True
-              SizeOptions.SizableVert = True
-              SizeOptions.Width = 431
+              Caption = #21150#29702#21544#25968':'
               Control = EditValue
               ControlOptions.ShowBorder = False
             end
           end
         end
         object dxLayoutGroup3: TdxLayoutGroup
+          AutoAligns = [aaVertical]
           AlignHorz = ahRight
-          AlignVert = avTop
-          CaptionOptions.Visible = False
-          ButtonOptions.Buttons = <>
+          ShowCaption = False
           Hidden = True
           LayoutDirection = ldHorizontal
           ShowBorder = False
           object dxLayoutItem1: TdxLayoutItem
+            AutoAligns = [aaVertical]
             AlignHorz = ahRight
-            CaptionOptions.Text = 'Button1'
-            CaptionOptions.Visible = False
             Control = BtnOK
             ControlOptions.ShowBorder = False
           end
           object dxLayout1Item2: TdxLayoutItem
+            AutoAligns = [aaVertical]
             AlignHorz = ahRight
-            CaptionOptions.Text = 'Button2'
-            CaptionOptions.Visible = False
             Control = BtnExit
             ControlOptions.ShowBorder = False
           end
