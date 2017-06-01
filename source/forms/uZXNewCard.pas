@@ -532,8 +532,14 @@ begin
       Writelog(nHint);
       Exit;
     end;
+
+    Result := TruckmultipleCard(EditTruck.Text,nHint);
+    if not Result then
+    begin
+      Writelog(nHint);
+      Exit;
+    end;
   end;
-  
   if Sender = EditValue then
   begin
     Result := IsNumber(EditValue.Text, True) and (StrToFloat(EditValue.Text)>0);

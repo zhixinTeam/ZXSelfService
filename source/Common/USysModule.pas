@@ -155,6 +155,7 @@ end;
 procedure FreeSystemObject;
 begin
   FreeAndNil(gSysLoger);
+  gSysParam.FQCReportFR3Map.Free;
 end;
 
 end.

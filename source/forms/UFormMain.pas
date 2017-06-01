@@ -522,16 +522,29 @@ end;
 procedure TfFormMain.imgPrintClick(Sender: TObject);
 var
   nP: TFormCommandParam;
-  nHyDan,nStockname:string;
+  nHyDan,nStockname,nstockno:string;
+  nShortFileName:string;
+  nStr:string;
 begin
+  nShortFileName := '';
   CreateBaseFormItem(cFI_FormBarCodePrint, '', @nP);
   if (nP.FCommand = cCmd_ModalResult) and (nP.FParamA = mrOK) then
   begin
     nHyDan := nP.FParamB;
     nStockname := nP.FParamC;
+    nstockno := nP.FParamD;
+    nShortFileName := gSysParam.FQCReportFR3Map.Values[nstockno]; 
     if nHyDan='' then
     begin
       ShowMsg('当前品种无需打印化验单。',sHint);
+      Exit;
+    end;
+
+    if (nShortFileName='') then
+    begin
+      nStr := '品种[ '+nstockno+' ]暂不支持自助打印质检单，请到开票窗口咨询';
+      ShowMsg(nStr,sHint);
+      WriteLog(nStr);
       Exit;
     end;
 
@@ -540,7 +553,7 @@ begin
       FDR := TFDR.Create(Application);
     end;
 
-    if PrintHuaYanReport(nHYDan, nStockName, False) then
+    if PrintHuaYanReport(nHYDan, nStockName,nstockno,nShortFileName, False) then
     begin
       ShowMsg('打印成功，请在下方出纸口取走您的化验单',sHint);
     end

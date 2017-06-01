@@ -547,6 +547,7 @@ end;
 function TfFormNewPurchaseCard.VerifyCtrl(Sender: TObject;
   var nHint: string): Boolean;
 var nVal: Double;
+  nStr:string;
 begin
   Result := True;
 
@@ -559,6 +560,13 @@ begin
       Writelog(nHint);
       Exit;
     end;
+
+    Result := TruckmultipleCard(EditTruck.Text,nHint);
+    if not Result then
+    begin
+      Writelog(nHint);
+      Exit;
+    end;    
   end;
 
   if Sender = EditValue then

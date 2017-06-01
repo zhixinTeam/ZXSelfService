@@ -31,7 +31,7 @@ inherited fFormBarcodePrint: TfFormBarcodePrint
       TabOrder = 5
     end
     object editWebOrderNo: TcxTextEdit [2]
-      Left = 90
+      Left = 24
       Top = 29
       ParentFont = False
       Properties.OnChange = editWebOrderNoPropertiesChange
@@ -96,30 +96,24 @@ inherited fFormBarcodePrint: TfFormBarcodePrint
     end
     inherited dxLayout1Group_Root: TdxLayoutGroup
       inherited dxGroup1: TdxLayoutGroup
-        CaptionOptions.Text = ''
         object dxLayout1Item5: TdxLayoutItem
-          CaptionOptions.Text = #21830#22478#35746#21333#21495
+          Caption = #21830#22478#35746#21333#21495
           Control = editWebOrderNo
           ControlOptions.ShowBorder = False
         end
         object dxLayout1Item3: TdxLayoutItem
+          AutoAligns = [aaVertical]
           AlignHorz = ahRight
-          CaptionOptions.Text = 'cxLabel1'
-          CaptionOptions.Visible = False
           Control = cxLabel1
           ControlOptions.ShowBorder = False
         end
         object dxLayout1Item4: TdxLayoutItem
-          CaptionOptions.Text = 'cxLabel2'
-          CaptionOptions.Visible = False
           Control = cxLabel2
           ControlOptions.ShowBorder = False
         end
       end
       inherited dxLayout1Group1: TdxLayoutGroup
         object dxLayout1Item6: TdxLayoutItem [0]
-          CaptionOptions.Text = 'cxButton1'
-          CaptionOptions.Visible = False
           Control = btnClear
           ControlOptions.ShowBorder = False
         end

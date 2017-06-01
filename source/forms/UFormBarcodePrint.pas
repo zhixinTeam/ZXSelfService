@@ -33,7 +33,7 @@ type
     { Private declarations }
     FAutoClose:Integer;
     FParam: PFormCommandParam;
-    function GetHYDan(const nwebOrderid:string; var nHYDan,nStockname:string):Boolean;
+    function GetHYDan(const nwebOrderid:string; var nHYDan,nStockname,nStockno:string):Boolean;
     procedure Writelog(nMsg:string);
   public
     { Public declarations }
@@ -78,7 +78,7 @@ end;
 procedure TfFormBarcodePrint.BtnOKClick(Sender: TObject);
 var
   nWebOrderID:string;
-  nHyDan,nstockname:string;
+  nHyDan,nstockname,nstockno:string;
   nMsg:string;
 begin
   nWebOrderID := Trim(editWebOrderNo.Text);
@@ -88,13 +88,14 @@ begin
     ShowMsg(nMsg,sHint);
     Exit;
   end;
-  if not GetHYDan(nWebOrderID,nHyDan,nstockname) then Exit;
+  if not GetHYDan(nWebOrderID,nHyDan,nstockname,nstockno) then Exit;
   FParam.FParamB := nHyDan;
   FParam.FParamC := nstockname;
+  FParam.FParamD := nstockno;
   ModalResult := mrok;
 end;
 
-function TfFormBarcodePrint.GetHYDan(const nwebOrderid:string;var nHYDan,nStockname: string): Boolean;
+function TfFormBarcodePrint.GetHYDan(const nwebOrderid:string;var nHYDan,nStockname,nStockno: string): Boolean;
 var
   nStr:string;
   nBillno:string;
@@ -117,7 +118,7 @@ begin
     nBillno := FieldByName('WOM_LID').AsString;
   end;
 
-  nStr := 'select L_Status,L_HYDan,L_StockName from %s where L_ID=''%s''';
+  nStr := 'select L_Status,L_HYDan,L_StockName,l_Stockno from %s where L_ID=''%s''';
   nStr := Format(nStr,[sTable_Bill,nBillno]);
   with fdm.QueryTemp(nStr) do
   begin
@@ -138,6 +139,7 @@ begin
     end;
     nHYDan := FieldByName('L_HYDan').AsString;
     nStockName := FieldByName('L_StockName').AsString;
+    nStockno := FieldByName('l_Stockno').AsString;
     Result := True;
   end;  
 end;

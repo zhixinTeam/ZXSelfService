@@ -247,7 +247,7 @@ function PrintOrderReport(const nOrder: string;  const nAsk: Boolean): Boolean;
 //打印采购单
 function PrintPoundReport(const nPound: string; nAsk: Boolean): Boolean;
 //打印榜单
-function PrintHuaYanReport(const nHID, nStockName: string; const nAsk: Boolean): Boolean;
+function PrintHuaYanReport(const nHID, nStockName,nStockno,nReportFileName: string; const nAsk: Boolean): Boolean;
 function PrintHeGeReport(const nHID: string; const nAsk: Boolean): Boolean;
 //化验单,合格证
 function PrintBillLoadReport(nBill: string; const nAsk: Boolean): Boolean;
@@ -283,6 +283,8 @@ function get_shopPurchaseByno(const nXmlStr:string):string;
 
 function CallBusinessCommand(const nCmd: Integer; const nData,nExt: string;
   const nOut: PWorkerBusinessCommand; const nWarn: Boolean = True): Boolean;
+
+function TruckmultipleCard(const nTruckno:string;var nMsg:string):Boolean;  
 implementation
 
 //Desc: 记录日志
@@ -2455,7 +2457,7 @@ begin
 end;
 
 //Desc: 打印标识为nHID的化验单
-function PrintHuaYanReport(const nHID, nStockName: string;
+function PrintHuaYanReport(const nHID, nStockName,nStockno,nReportFileName: string;
   const nAsk: Boolean): Boolean;
 var nStr,nSR: string;
     nOut: TWorkerBusinessCommand;
@@ -2479,11 +2481,14 @@ begin
     ShowMsg(nStr, sHint); Exit;
   end;
 
-  nStr := GetReportFileByStock(nStockName);
+
+//  nStr := GetReportFileByStock(nStockName);
+  nStr := gPath + sReportDir + nReportFileName;
 
   if not FDR.LoadReportFile(nStr) then
   begin
-    nStr := '无法正确加载报表文件';
+    nStr := '品种[ '+nStockName+' ]无法正确加载报表文件';
+    WriteLog(nStr);
     ShowMsg(nStr, sHint); Exit;
   end;
 
@@ -2625,6 +2630,37 @@ begin
   Result := '';
   if CallBusinessCommand(cBC_WeChat_get_shopPurchasebyNO, nXmlStr, '', @nOut,False) then
     Result := nOut.FData;
+end;
+
+function TruckmultipleCard(const nTruckno:string;var nMsg:string):Boolean;
+var
+  nStr:string;
+begin
+  Result := False;
+  nStr := 'select * from %s where l_card<>'''' and l_truck=''%s''';
+  nStr := Format(nStr,[sTable_Bill,nTruckno]);
+  with fdm.QueryTemp(nStr) do
+  begin
+    if RecordCount>0 then
+    begin
+      nMsg := '车辆[ %s ]在完成交货单[ %s ]之前禁止开单';
+      nMsg := Format(nMsg,[nTruckno,FieldByName('l_id').AsString]);
+      Exit;
+    end;
+  end;
+
+  nStr := 'select * from %s where O_card<>'''' and o_truck=''%s''';
+  nStr := Format(nStr,[sTable_Order,nTruckno]);
+  with fdm.QueryTemp(nStr) do
+  begin
+    if RecordCount>0 then
+    begin
+      nMsg := '车辆[ %s ]在完成采购订单[ %s ]之前禁止开单';
+      nMsg := Format(nMsg,[nTruckno,FieldByName('o_id').AsString]);
+      Exit;
+    end;
+  end;
+  Result := True;
 end;
 
 end.

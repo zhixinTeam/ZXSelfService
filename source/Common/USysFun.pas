@@ -85,7 +85,9 @@ begin
       FCanCreateCard := ReadBool(FProgID,'CanCreateCard',False);
       FAutoClose_Mintue := ReadInteger(FProgID, 'AutoCloseMintue', 1);
       FWebOrderLength := ReadInteger(FProgID, 'WebOrderLength', 20);
-
+      FQCReportFR3Map := TStringList.Create;
+      ReadSectionValues('QCReportFR3Map',FQCReportFR3Map);
+      
       FProberUser := 0;
       FVoiceUser := 0;
 
