@@ -87,6 +87,9 @@ begin
       FWebOrderLength := ReadInteger(FProgID, 'WebOrderLength', 20);
       FQCReportFR3Map := TStringList.Create;
       ReadSectionValues('QCReportFR3Map',FQCReportFR3Map);
+      FShuLiaoNeedBatchCode := ReadBool(FProgID,'ShuLiaoNeedBatchCode',True);
+      FReadInsertCard := ReadBool(FProgID,'ReadInsertCard',False);
+      FEnablePurchaseMultipleCard := ReadBool(FProgID,'PurchaseMultipleCard',True);
       
       FProberUser := 0;
       FVoiceUser := 0;

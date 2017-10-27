@@ -6309,7 +6309,7 @@ object fFormMain: TfFormMain
           FEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFE}
         OnClick = imgCardClick
       end
-      object Image3: TImage
+      object ImageSep: TImage
         Left = 0
         Top = 109
         Width = 265
@@ -9010,18 +9010,6 @@ object fFormMain: TfFormMain
     Enabled = False
     OnTimer = TimerReadCardTimer
     Left = 494
-    Top = 16
-  end
-  object TimerInsertCard: TTimer
-    Enabled = False
-    OnTimer = TimerInsertCardTimer
-    Left = 520
-    Top = 16
-  end
-  object TimerMachineMonitor: TTimer
-    Interval = 2000
-    OnTimer = TimerMachineMonitorTimer
-    Left = 544
     Top = 16
   end
 end

@@ -66,6 +66,7 @@ type
     FWebOrderIndex:Integer; //商城订单索引
     FWebOrderItems:array of stMallPurchaseItem; //商城订单数组
     FMaxQuantity:Double; //合同剩余量
+    Fbegin:TDateTime;
     procedure InitListView;
     procedure SetControlsReadOnly;
     procedure Writelog(nMsg:string);
@@ -89,7 +90,8 @@ var
 implementation
 uses
   ULibFun,UBusinessPacker,USysLoger,UBusinessConst,UFormMain,USysBusiness,USysDB,
-  UAdjustForm,UFormBase,UDataReport,UDataModule,NativeXml;
+  UAdjustForm,UFormBase,UDataReport,UDataModule,NativeXml,UMgrK720Reader,UFormWait,
+  DateUtils;
 {$R *.dfm}
 
 { TfFormNewPurchaseCard }
@@ -120,7 +122,6 @@ procedure TfFormNewPurchaseCard.FormClose(Sender: TObject;
 begin
   Action:=  caFree;
   fFormNewPurchaseCard := nil;
-  fFormMain.TimerInsertCard.Enabled := True;
 end;
 
 procedure TfFormNewPurchaseCard.btnClearClick(Sender: TObject);
@@ -267,6 +268,7 @@ begin
   nXmlStr := Format(nXmlStr,[gSysParam.FFactory,nCard]);
   nXmlStr := PackerEncodeStr(nXmlStr);
 
+  FBegin := now;
   nData := get_shopPurchaseByno(nXmlStr);
   if nData='' then
   begin
@@ -275,6 +277,7 @@ begin
     Exit;
   end;
 
+  Writelog('TfFormNewPurchaseCard.DownloadOrder(nCard='''+nCard+''') 查询商城订单-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
   //解析网城订单信息
   nData := PackerDecodeStr(nData);
   Writelog('get_shopPurchaseByno res:'+nData);
@@ -333,6 +336,7 @@ var
 begin
   nOrderItem := FWebOrderItems[FWebOrderIndex];
   nWebOrderID := nOrderItem.FOrder_id;
+  FBegin := now;
   nRepeat := IsRepeatCard(nWebOrderID);
 
   if nRepeat then
@@ -342,14 +346,16 @@ begin
     Writelog(nMsg);
     Exit;
   end;
+  writelog('TfFormNewPurchaseCard.LoadSingleOrder 检查商城订单是否重复使用-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
 
   //订单有效性校验
+  FBegin := Now;  
   if not CheckOrderValidate(nOrderItem) then
   begin
     BtnOK.Enabled := False;
     Exit;
   end;
-
+  writelog('TfFormNewPurchaseCard.LoadSingleOrder 订单有效性校验-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
   //填充界面信息
   //基本信息
   EditID.Text := nOrderItem.Fpurchasecontract_no;
@@ -393,11 +399,20 @@ begin
   begin
     if RecordCount<=0 then
     begin
-      nMsg := '采购合同编号有误或采购合同已被删除[%s]。';
-      nMsg := Format(nMsg,[nWebOrderItem.Fpurchasecontract_no]);
-      ShowMsg(nMsg,sError);
-      Writelog(nMsg);
-      Exit;
+      //继续查询采购申请单
+      nStr := 'select b_proid as provider_code,b_proname as provider_name,b_stockno as con_materiel_Code,b_restvalue as con_remain_quantity from %s where b_id=''%s''';
+      nStr := Format(nStr,[sTable_OrderBase,nWebOrderItem.Fpurchasecontract_no]);
+      with fdm.QueryTemp(nStr) do
+      begin
+        if RecordCount<=0 then
+        begin
+          nMsg := '采购合同编号有误或采购合同已被删除[%s]。';
+          nMsg := Format(nMsg,[nWebOrderItem.Fpurchasecontract_no]);
+          ShowMsg(nMsg,sError);
+          Writelog(nMsg);
+          Exit;
+        end;
+      end;
     end;
 
     nWebOrderItem.FProvID := FieldByName('provider_code').AsString;
@@ -443,6 +458,9 @@ var
   nOrderItem:stMallPurchaseItem;
   nOrder:string;
   nNewCardNo:string;
+  nidx:Integer;
+  i:Integer;
+  nRet:Boolean;
 begin
   Result := False;
   nOrderItem := FWebOrderItems[FWebOrderIndex];
@@ -469,6 +487,31 @@ begin
     Exit;
   end;
 
+  nNewCardNo := '';
+  FBegin := Now;
+
+  //连续三次读卡均失败，则回收卡片，重新发卡
+  for i := 0 to 3 do
+  begin
+    for nIdx:=0 to 3 do
+    if gMgrK720Reader.ReadCard(nNewCardNo) then Break
+    else Sleep(500);
+    //连续三次读卡,成功则退出。
+    if nNewCardNo<>'' then Break;
+    gMgrK720Reader.RecycleCard;
+  end;
+
+  if nNewCardNo = '' then
+  begin
+    ShowDlg('卡箱异常,请查看是否有卡.', sWarn, Self.Handle);
+    Exit;
+  end;
+
+  nNewCardNo := gMgrK720Reader.ParseCardNO(nNewCardNo);
+  WriteLog(nNewCardNo);
+  //解析卡片
+  writelog('TfFormNewPurchaseCard.SaveBillProxy 发卡机读卡-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+
   nList := TStringList.Create;
   try
     nList.Values['SQID'] := EditID.Text;
@@ -485,6 +528,7 @@ begin
     
     nList.Values['WebOrderID'] := nWebOrderID;
 
+    FBegin := Now;
     nOrder := SaveOrder(PackerEncodeStr(nList.Text));
     if nOrder='' then
     begin
@@ -493,37 +537,48 @@ begin
       Writelog(nHint);
       Exit;
     end;
+    writelog('TfFormNewPurchaseCard.SaveBillProxy 保存采购单-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+
+    FBegin := Now;
     SaveWebOrderMatch(nOrder,nWebOrderID);
+    writelog('TfFormNewPurchaseCard.SaveBillProxy 保存商城订单号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
   finally
     nList.Free;
   end;
 
   ShowMsg('采购单保存成功', sHint);
-  //发卡
-  if not FSzttceApi.IssueOneCard(nNewCardNo) then
+
+  FBegin := Now;
+  nRet := SaveOrderCard(nOrder,nNewCardNo);
+  if nRet then
   begin
-    nHint := '出卡失败,请到开票窗口补办磁卡：[errorcode=%d,errormsg=%s]';
-    nHint := Format(nHint,[FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg]);
-    Writelog(nHint);
-    ShowMsg(nHint,sHint);
-//    fFormMain.SaveMachineStatus(FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg);
-    Exit;
+    nRet := False;
+    for nIdx := 0 to 3 do
+    begin
+      nRet := gMgrK720Reader.SendReaderCmd('FC0');
+      if nRet then Break;
+
+      Sleep(500);
+    end;
+    //发卡
   end;
-//  fFormMain.ResetMachineStatus;
-  if not SaveOrderCard(nOrder,nNewCardNo) then
+
+  if nRet then
   begin
-    nHint := '卡号 [%s] 关联采购订单 [%s] 失败，请到开票窗口重新关联。';
-    nHint := Format(nHint,[nNewCardNo,nOrder]);
-    Writelog(nHint);
-    ShowMsg(nHint,sHint);
+    nHint := '商城货单号['+editWebOrderNo.Text+']发卡成功,卡号['+nNewCardNo+'],请收好您的卡片';
+    WriteLog(nHint);
+    ShowMsg(nHint,sWarn);
   end
   else begin
-    nHint := '发卡成功,卡号[ %s ],请收好您的卡片';
-    nHint := Format(nHint,[nNewCardNo]);
-    Writelog(nHint);    
+    gMgrK720Reader.RecycleCard;
+    
+    nHint := '商城货单号[%s]卡号 [%s] 关联采购订单 [%s] 失败，请到开票窗口重新关联。';
+    nHint := Format(nHint,[editWebOrderNo.Text,nNewCardNo,nOrder]);
+    Writelog(nHint);
     ShowMsg(nHint,sHint);
   end;
-  Close;
+  writelog('TfFormNewPurchaseCard.SaveBillProxy 发卡机出卡并关联磁卡号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+  if nRet then Close;
 end;
 
 function TfFormNewPurchaseCard.SaveWebOrderMatch(const nBillID,

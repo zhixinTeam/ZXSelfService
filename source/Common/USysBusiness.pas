@@ -286,7 +286,8 @@ function CallBusinessCommand(const nCmd: Integer; const nData,nExt: string;
 
 function TruckmultipleCard(const nTruckno:string;var nMsg:string):Boolean;  
 implementation
-
+uses
+  UWaitItem;
 //Desc: 记录日志
 procedure WriteLog(const nEvent: string);
 begin
@@ -2461,6 +2462,7 @@ function PrintHuaYanReport(const nHID, nStockName,nStockno,nReportFileName: stri
   const nAsk: Boolean): Boolean;
 var nStr,nSR: string;
     nOut: TWorkerBusinessCommand;
+    nBegin,nEnd:Int64;
 begin
   if nAsk then
   begin
@@ -2468,19 +2470,23 @@ begin
     nStr := '是否要打印化验单?';
     if not QueryDlg(nStr, sAsk) then Exit;
   end else Result := False;
-
+  StartHighResolutionTimer;
+  nBegin := GetHighResolutionTimerResult;
   if not CallBusinessCommand(cBC_SyncYTBatchCodeInfo, nHID, '', @nOut) then Exit;
-
+  nEnd := GetHighResolutionTimerResult;
+  WriteLog('function PrintHuaYanReport(nHID='''+nHID+''',nStockName='''+nStockName+''',nStockno='''+nStockno+''',nReportFileName='''+nReportFileName+''') CallBusinessCommand(cBC_SyncYTBatchCodeInfo)-耗时：'+FloatToStr((nEnd-nbegin)/1000.0)+'ms');
   nStr := 'Select * From %s Where Paw_Analy=''%s''';
   nStr := Format(nStr, [sTable_YT_Batchcode, nHID]);
-
+  StartHighResolutionTimer;
+  nBegin := GetHighResolutionTimerResult;
   if FDM.QueryTemp(nStr).RecordCount < 1 then
   begin
     nStr := '编号为[ %s ] 的化验单记录已无效!!';
     nStr := Format(nStr, [nHID]);
     ShowMsg(nStr, sHint); Exit;
   end;
-
+  nEnd := GetHighResolutionTimerResult;
+  WriteLog('function PrintHuaYanReport(nHID='''+nHID+''',nStockName='''+nStockName+''',nStockno='''+nStockno+''',nReportFileName='''+nReportFileName+''') query sql-耗时：'+FloatToStr((nEnd-nbegin)/1000.0)+'ms');
 
 //  nStr := GetReportFileByStock(nStockName);
   nStr := gPath + sReportDir + nReportFileName;
@@ -2494,8 +2500,15 @@ begin
 
   FDR.Dataset1.DataSet := FDM.SqlTemp;
   FDR.Report1.Report.PrintOptions.Printer := gSysParam.FHYDanPrinter;
-//  FDR.ShowReport;
+  {$IFDEF DEBUG}
+  FDR.ShowReport;
+  {$ELSE}
+  StartHighResolutionTimer;
+  nBegin := GetHighResolutionTimerResult;  
   FDR.PrintReport;
+  nEnd := GetHighResolutionTimerResult;
+  WriteLog('function PrintHuaYanReport(nHID='''+nHID+''',nStockName='''+nStockName+''',nStockno='''+nStockno+''',nReportFileName='''+nReportFileName+''') FDR.PrintReport-耗时：'+FloatToStr((nEnd-nbegin)/1000.0)+'ms');
+  {$ENDIF}
   Result := FDR.PrintSuccess;
 end;
 
@@ -2649,15 +2662,18 @@ begin
     end;
   end;
 
-  nStr := 'select * from %s where O_card<>'''' and o_truck=''%s''';
-  nStr := Format(nStr,[sTable_Order,nTruckno]);
-  with fdm.QueryTemp(nStr) do
+  if not gSysParam.FEnablePurchaseMultipleCard then
   begin
-    if RecordCount>0 then
+    nStr := 'select * from %s where O_card<>'''' and o_truck=''%s''';
+    nStr := Format(nStr,[sTable_Order,nTruckno]);
+    with fdm.QueryTemp(nStr) do
     begin
-      nMsg := '车辆[ %s ]在完成采购订单[ %s ]之前禁止开单';
-      nMsg := Format(nMsg,[nTruckno,FieldByName('o_id').AsString]);
-      Exit;
+      if RecordCount>0 then
+      begin
+        nMsg := '车辆[ %s ]在完成采购订单[ %s ]之前禁止开单';
+        nMsg := Format(nMsg,[nTruckno,FieldByName('o_id').AsString]);
+        Exit;
+      end;
     end;
   end;
   Result := True;

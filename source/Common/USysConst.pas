@@ -238,6 +238,9 @@ type
     FAutoClose_Mintue:Integer;                       //用户自助办卡窗口自动关闭时间
     FWebOrderLength:Integer;                         //微信商城订单长度
     FQCReportFR3Map:TStrings;                        //品种与打印模板映射
+    FShuLiaoNeedBatchCode:Boolean;                   //熟料是否需要出厂编号
+    FReadInsertCard:Boolean;                         //插入磁卡查询
+    FEnablePurchaseMultipleCard:Boolean;             //采购允许办理多卡
   end;
   //系统参数
 

@@ -27,16 +27,14 @@ type
     LabelTon: TcxLabel;
     LabelBill: TcxLabel;
     LabelOrder: TcxLabel;
-    TimerInsertCard: TTimer;
     imgPrint: TImage;
     PanelBottom: TPanel;
     PanelBCenter: TPanel;
     PanelBRight: TPanel;
     PanelBLeft: TPanel;
     imgCard: TImage;
-    Image3: TImage;
+    ImageSep: TImage;
     imgPurchaseCard: TImage;
-    TimerMachineMonitor: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComPort1RxChar(Sender: TObject; Count: Integer);
@@ -46,7 +44,6 @@ type
     procedure imgPrintClick(Sender: TObject);
     procedure imgCardClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
-    procedure TimerMachineMonitorTimer(Sender: TObject);
   private
     { Private declarations }
     FBuffer: string;
@@ -56,7 +53,6 @@ type
     //上次查询
     FTimeCounter: Integer;
     //计时
-    FSzttceApi:TSzttceApi;
 
     FHotKeyMgr: THotKeyManager;
     FHotKey: Cardinal;
@@ -64,6 +60,7 @@ type
     FHYDan,FStockName:string;
     FHyDanPrinterName,FDefaultPrinterName:string;
     FReadCardThread:TReadCardThread;
+    Fbegin:TDateTime;
     procedure ActionComPort(const nStop: Boolean);
     //串口处理
     procedure DoHotKeyHotKeyPressed(HotKey: Cardinal; Index: Word);
@@ -74,9 +71,7 @@ type
     FCardType:TCardType;
     procedure QueryCard(const nCard: string);
     //查询卡信息
-//    function SaveMachineStatus(const nCode:integer;const nMsg:string):boolean;
-//    function ResetMachineStatus:Boolean;
-//    function MachineStatusError:boolean;
+    procedure QueryPorderinfo(const nCard: string);
   end;
 
 var
@@ -89,8 +84,8 @@ implementation
 uses
   IniFiles, ULibFun, CPortTypes, USysLoger, USysDB, USmallFunc, UDataModule,
   UFormConn, uZXNewCard,USysConst,UClientWorker,UMITPacker,USysModule,USysBusiness,
-  UDataReport,UFormInputbox, UCardTypeSelect,uZXNewPurchaseCard,UFormBarcodePrint,
-  UFormBase;
+  UDataReport,UFormInputbox, uZXNewPurchaseCard,UFormBarcodePrint,
+  UFormBase,DateUtils;
 
 type
   TReaderType = (ptT800, pt8142);
@@ -157,29 +152,17 @@ begin
     //启动读头
   except
   end;
-  FSzttceApi := TSzttceApi.Create;
-  if FSzttceApi.ErrorCode<>0 then
-  begin
-    nStr := '初始化自助发卡机失败，[ErrorCode=%d,ErrorMsg=%s]';
-    nStr := Format(nStr,[FSzttceApi.ErrorCode,FSzttceApi.ErrorMsg]);
-    ShowMsg(nStr,sHint);
-  end;
-  FSzttceApi.ParentWnd := Self.Handle;
-  TimerInsertcard.Enabled := True;
 
   FHotKeyMgr := THotKeyManager.Create(Self);
   FHotKeyMgr.OnHotKeyPressed := DoHotKeyHotKeyPressed;
 
   FHotKey := TextToHotKey('Ctrl + Alt + D', False);
   FHotKeyMgr.AddHotKey(FHotKey);
-  FCursorShow := False;
+
   if not Assigned(FDR) then
   begin
     FDR := TFDR.Create(Application);
   end;  
-//  imgPrint.Visible := False;
-  imgCard.Visible := gSysParam.FCanCreateCard;
-  TimerMachineMonitor.Enabled := False;
 end;
 
 procedure TfFormMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -188,7 +171,6 @@ begin
     ActionComPort(True);
   except
   end;
-  FSzttceApi.Free;
   FHotKeyMgr.Free;
 end;
 
@@ -274,8 +256,6 @@ begin
     LabelNum.Caption := '开放道数:';
     LabelTon.Caption := '提货数量:';
     LabelHint.Caption := '请您刷卡';
-    if FCardType=ctttce then FSzttceApi.ResetMachine;
-    TimerInsertCard.Enabled := True;
   end else
   begin
     LabelDec.Caption := IntToStr(FTimeCounter) + ' ';
@@ -287,6 +267,8 @@ end;
 procedure TfFormMain.ComPort1RxChar(Sender: TObject; Count: Integer);
 var nStr: string;
     nIdx,nLen: Integer;
+    nCardno:string;
+    nSql:string;
 begin
   ComPort1.ReadStr(nStr, Count);
   FBuffer := FBuffer + nStr;
@@ -303,8 +285,30 @@ begin
     FBuffer := '';
     WriteLog('ComPort1RxChar:'+ParseCardNO(nStr, True));
     FCardType := ctRFID;
-    QueryCard(ParseCardNO(nStr, True));
-    Exit;
+    nCardno := ParseCardNO(nStr, True);
+    nSql := 'select * from %s where c_card=''%s''';
+    nSql := Format(nSql,[sTable_Card,nCardno]);
+    with FDM.QuerySQL(nSql) do
+    begin
+      if RecordCount<=0 then
+      begin
+        LabelDec.Caption := '磁卡号无效';
+        Exit;
+      end;
+      if FieldByName('c_used').AsString=sflag_sale then
+      begin
+        QueryCard(nCardno);
+        Exit;
+      end
+      else if FieldByName('c_used').AsString=sFlag_Provide then begin
+        QueryPorderinfo(nCardno);
+        Exit;
+      end
+      else begin
+        LabelDec.Caption := '磁卡号无效';
+        Exit;
+      end;
+    end;
   end;
 end;
 
@@ -315,6 +319,7 @@ procedure TfFormMain.QueryCard(const nCard: string);
 var nVal: Double;
     nStr,nStock,nBill,nVip,nLine,nPoundQueue,nTruck: string;
     nDate: TDateTime;
+    nBeginTotal:TDateTime;
 begin
 //  mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
 //  mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
@@ -322,18 +327,18 @@ begin
 
   if (nCard = FLastCard) and (GetTickCount - FLastQuery < 8 * 1000) then
   begin
-    TimerInsertCard.Enabled := True;
     LabelDec.Caption := '请不要频繁读卡';
     Exit;
   end;
 
+  nBeginTotal := Now;
   try
     FTimeCounter := 10;
     TimerReadCard.Enabled := True;
 
     nStr := 'Select * From %s Where L_Card=''%s''';
     nStr := Format(nStr, [sTable_Bill, nCard]);
-
+    FBegin := Now;
     with FDM.QuerySQL(nStr) do
     begin
       if RecordCount < 1 then
@@ -377,24 +382,23 @@ begin
       LabelTruck.Caption := '车牌号码: ' + FieldByName('L_Truck').AsString;
       LabelStock.Caption := '品种名称: ' + FieldByName('L_StockName').AsString;
       LabelTon.Caption := '提货数量: ' + FieldByName('L_Value').AsString + '吨';
-//      imgPrint.Visible := True;
     end;
-
+    WriteLog('TfFormMain.QueryCard(nCard='''+nCard+''')查询提货单[nStr]-耗时：'+InttoStr(MilliSecondsBetween(Now, nBeginTotal))+'ms');
     //--------------------------------------------------------------------------
     nStr := 'Select Count(*) From %s ' +
             'Where Z_StockNo=''%s'' And Z_Valid=''%s'' And Z_VipLine=''%s''';
     nStr := Format(nStr, [sTable_ZTLines, nStock, sFlag_Yes,nVip]);
-
+    FBegin := Now;
     with FDM.QuerySQL(nStr) do
     begin
       LabelNum.Caption := '开放道数: ' + Fields[0].AsString + '个';
     end;
-
+    WriteLog('TfFormMain.QueryCard(nCard='''+nCard+''')查询开放道数[+nStr+]-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
     //--------------------------------------------------------------------------
     nStr := 'Select T_line,T_InTime,T_Valid From %s ZT ' +
              'Where T_HKBills like ''%%%s%%'' ';
     nStr := Format(nStr, [sTable_ZTTrucks, nBill]);
-
+    FBegin := Now;
     with FDM.QuerySQL(nStr) do
     begin
       if RecordCount < 1 then
@@ -415,7 +419,7 @@ begin
       nLine := FieldByName('T_Line').AsString;
       //通道号
     end;
-
+    WriteLog('TfFormMain.QueryCard(nCard='''+nCard+''')查询车辆状态['+nStr+']-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
     if nLine <> '' then
     begin
       nStr := 'Select Z_Valid,Z_Name From %s Where Z_ID=''%s'' ';
@@ -474,7 +478,7 @@ begin
             MI('$IT', DateTime2Str(nDate)),MI('$VIP', nVip)]);
     end;
     //xxxxx
-
+    FBegin := Now;
     with FDM.QuerySQL(nStr) do
     begin
       if Fields[0].AsInteger < 1 then
@@ -487,7 +491,7 @@ begin
         LabelHint.Caption := Format(nStr, [Fields[0].AsInteger]);
       end;
     end;
-
+    WriteLog('TfFormMain.QueryCard(nCard='''+nCard+''')查询车辆队列-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
     FLastQuery := GetTickCount;
     FLastCard := nCard;
     //已成功卡号
@@ -498,7 +502,7 @@ begin
       WriteLog(E.Message);
     end;
   end;
-
+  WriteLog('TfFormMain.QueryCard(nCard='''+nCard+''')查询磁卡信息-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
   FDM.ADOConn.Connected := False;
 end;
 
@@ -565,20 +569,11 @@ end;
 
 procedure TfFormMain.imgCardClick(Sender: TObject);
 begin
-  if not TimerInsertCard.Enabled then
-  begin
-    ShowMsg('系统正在读卡，请稍候...',sHint);
-    Exit;
-  end;
-  
-//  if MachineStatusError then Exit;
-
   if Sender=imgCard then
   begin
     if not Assigned(fFormNewCard) then
     begin
       fFormNewCard := TfFormNewCard.Create(nil);
-      fFormNewCard.SzttceApi := FSzttceApi;
       fFormNewCard.SetControlsClear;
     end;
     fFormNewCard.BringToFront;
@@ -593,7 +588,6 @@ begin
    if not Assigned(fFormNewPurchaseCard) then
     begin
       fFormNewPurchaseCard := TfFormNewPurchaseCard.Create(nil);
-      fFormNewPurchaseCard.SzttceApi := FSzttceApi;
       fFormNewPurchaseCard.SetControlsClear;
     end;
     fFormNewPurchaseCard.BringToFront;
@@ -603,7 +597,6 @@ begin
     fFormNewPurchaseCard.Height := self.Height;
     fFormNewPurchaseCard.Show;
   end;
-  TimerInsertCard.Enabled := False;
 end;
 
 procedure TfFormMain.FormResize(Sender: TObject);
@@ -652,76 +645,47 @@ begin
   end;
 end;
 
-//function TfFormMain.SaveMachineStatus(const nCode:integer;const nMsg:string): boolean;
-//var
-//  nini:TIniFile;
-//  nFileName:string;
-//begin
-//  Result := False;
-//  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
-//  if not FileExists(nFileName) then
-//  begin
-//    FileCreate(nFileName);
-//  end;
-//
-//  nini := TIniFile.Create(nFileName);
-//  try
-//    nini.WriteInteger('status','errorcode',ncode);
-//    nini.WriteString('status','errormsg',nMsg);
-//    Result := True;
-//  finally
-//    nini.Free;
-//  end;
-//end;
-//
-//function TfFormMain.MachineStatusError: boolean;
-//var
-//  nini:TIniFile;
-//  nFileName:string;
-//  nCode, nMsg: string;
-//  nStr:string;
-//begin
-//  Result := False;
-//  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
-//  if not FileExists(nFileName) then Exit;
-//
-//  nini := TIniFile.Create(nFileName);
-//  try
-//    nCode := nini.ReadString('status','errorcode','');
-//    nMsg := nini.ReadString('status','errormsg','');
-//    nStr := '发卡机状态错误，错误代码【%s】,错误信息【%s】,暂停该服务。';
-//    nStr := Format(nStr,[ncode,nMsg]);
-//    WriteLog(nStr);
-//    ShowMsg(nStr,sHint);
-//    Result := True;
-//  finally
-//    nini.Free;
-//  end;
-//end;
-//
-//function TfFormMain.ResetMachineStatus: Boolean;
-//var
-//  nFileName:string;
-//begin
-//  Result := False;
-//  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
-//  DeleteFile(nFileName);
-//end;
-
-procedure TfFormMain.TimerMachineMonitorTimer(Sender: TObject);
+procedure TfFormMain.QueryPorderinfo(const nCard: string);
 var
-  nFileName:string;
-  nMachineStatus:TMachineStatus;
+  nStr:string;
+  nDate: TDateTime;
 begin
-  nFileName := ExtractFilePath(ParamStr(0))+'MachineStatus.ini';
-  if FileExists(nFileName) then
+  if (nCard = FLastCard) and (GetTickCount - FLastQuery < 8 * 1000) then
   begin
-    FSzttceApi.GetCurrentStatus(nMachineStatus);
-    if (nMachineStatus.msCode=c_MachineStatus_CardBoxEmpty)
-    or (nMachineStatus.msCode=C_MachineStatus_OverlapedCard)
-    or (nMachineStatus.msCode=C_MaahineStatus_RecycleBoxFull1)
-    or (nMachineStatus.msCode=C_MaahineStatus_RecycleBoxFull2) then Exit;
-//    ResetMachineStatus;
+    LabelDec.Caption := '请不要频繁读卡';
+    Exit;
+  end;
+
+  try
+    FTimeCounter := 10;
+    TimerReadCard.Enabled := True;
+    
+    nStr := 'select * from %s where o_card=''%s''';
+    nStr := Format(nStr, [sTable_Order, nCard]);
+    FBegin := Now;
+    with FDM.QuerySQL(nStr) do
+    begin
+      if RecordCount < 1 then
+      begin
+        FTimeCounter := 1;
+        LabelDec.Caption := '磁卡号无效';
+        Exit;
+      end;
+      LabelBill.Caption := '交货单号: ' + FieldByName('o_id').AsString;
+      LabelOrder.Caption := '采购订单: ' + FieldByName('o_bid').AsString;
+      LabelTruck.Caption := '车牌号码: ' + FieldByName('o_Truck').AsString;
+      LabelStock.Caption := '品种名称: ' + FieldByName('o_StockName').AsString;
+      LabelTon.Caption := '提货数量: ';
+    end;
+    WriteLog('TfFormMain.QueryPorderinfo(nCard='''+nCard+''')查询采购单['+nStr+']-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+    FLastQuery := GetTickCount;
+    FLastCard := nCard;
+  except
+    on E: Exception do
+    begin
+      ShowMsg('查询失败', sHint);
+      WriteLog(E.Message);
+    end;
   end;
 end;
 
