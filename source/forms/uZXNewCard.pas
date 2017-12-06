@@ -70,6 +70,8 @@ type
     btnClear: TcxButton;
     TimerAutoClose: TTimer;
     dxLayout1Group2: TdxLayoutGroup;
+    EditHd: TcxTextEdit;
+    dxLayout1Item1: TdxLayoutItem;
     procedure BtnExitClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -269,6 +271,7 @@ begin
       FWebOrderItems[i].FData := nListB.Values['data'];
       FWebOrderItems[i].Ftracknumber := nListB.Values['tracknumber'];
       FWebOrderItems[i].FYunTianOrderId := nListB.Values['fac_order_no'];
+      FWebOrderItems[i].FHd_Order_no := nListB.Values['hd_fac_order_no'];
       AddListViewItem(FWebOrderItems[i]);
     end;
   finally
@@ -379,7 +382,8 @@ begin
   EditMax.Text    := FCardData.Values['XCB_RemainNum'];
   EditValue.Text := nOrderItem.FData;
   EditTruck.Text := nOrderItem.Ftracknumber;
-
+  EditHd.Text    := nOrderItem.FHd_Order_No;
+  
   if gSysParam.FShuLiaoNeedBatchCode then
   begin
     FBegin := Now;
@@ -592,7 +596,7 @@ var
   nWebOrderID:string;
   nNewCardNo:string;
   nidx:Integer;
-  i:Integer;
+  i,j:Integer;
   nRet: Boolean;
 begin
   Result := False;
@@ -629,80 +633,90 @@ begin
     end;
   end;
 
-  nNewCardNo := '';
-  Fbegin := Now;
+  if gSysParam.FCanCreateCard then
+  begin
+    nNewCardNo := '';
+    Fbegin := Now;
   
-  //连续三次读卡均失败，则回收卡片，重新发卡
-  for i := 0 to 3 do
-  begin
-    for nIdx:=0 to 3 do
+    //连续三次读卡均失败，则回收卡片，重新发卡
+    for i := 0 to 3 do
     begin
-      if gMgrK720Reader.ReadCard(nNewCardNo) then Break;
-      //连续三次读卡,成功则退出。
+      for nIdx:=0 to 3 do
+      begin
+        if gMgrK720Reader.ReadCard(nNewCardNo) then Break;
+        //连续三次读卡,成功则退出。
+      end;
+      if nNewCardNo<>'' then Break;
+      gMgrK720Reader.RecycleCard;
     end;
-    if nNewCardNo<>'' then Break;
-    gMgrK720Reader.RecycleCard;
+
+    if nNewCardNo = '' then
+    begin
+      ShowDlg('卡箱异常,请查看是否有卡.', sWarn, Self.Handle);
+      Exit;
+    end;
+
+    nNewCardNo := gMgrK720Reader.ParseCardNO(nNewCardNo);
+    WriteLog(nNewCardNo);
+    //解析卡片
+    writelog('TfFormNewCard.SaveBillProxy 发卡机读卡-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
   end;
 
-  if nNewCardNo = '' then
-  begin
-    ShowDlg('卡箱异常,请查看是否有卡.', sWarn, Self.Handle);
-    Exit;
-  end;
-
-  nNewCardNo := gMgrK720Reader.ParseCardNO(nNewCardNo);
-  WriteLog(nNewCardNo);
-  //解析卡片
-  writelog('TfFormNewCard.SaveBillProxy 发卡机读卡-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+  //验证是否已经保存提货单
+  nRet := IFSaveBill(nWebOrderID, nBillID);
 
   //保存提货单
-  nStocks := TStringList.Create;
-  nList := TStringList.Create;
-  nTmp := TStringList.Create;
-  try
-    LoadSysDictItem(sFlag_PrintBill, nStocks);
+  if not nRet then
+  begin
+    nStocks := TStringList.Create;
+    nList := TStringList.Create;
+    nTmp := TStringList.Create;
+    try
+      LoadSysDictItem(sFlag_PrintBill, nStocks);
 
-    nTmp.Values['Type'] := FCardData.Values['XCB_CementType'];
-    nTmp.Values['StockNO'] := FCardData.Values['XCB_Cement'];
-    nTmp.Values['StockName'] := FCardData.Values['XCB_CementName'];
-    nTmp.Values['Price'] := '0.00';
-    nTmp.Values['Value'] := EditValue.Text;
+      nTmp.Values['Type'] := FCardData.Values['XCB_CementType'];
+      nTmp.Values['StockNO'] := FCardData.Values['XCB_Cement'];
+      nTmp.Values['StockName'] := FCardData.Values['XCB_CementName'];
+      nTmp.Values['Price'] := '0.00';
+      nTmp.Values['Value'] := EditValue.Text;
 
-    nList.Add(PackerEncodeStr(nTmp.Text));
-    nPrint := nStocks.IndexOf(FCardData.Values['XCB_Cement']) >= 0;
+      nList.Add(PackerEncodeStr(nTmp.Text));
+      nPrint := nStocks.IndexOf(FCardData.Values['XCB_Cement']) >= 0;
 
-    with nList do
-    begin
-      Values['Bills'] := PackerEncodeStr(nList.Text);
-      Values['ZhiKa'] := PackerEncodeStr(FCardData.Text);
-      Values['Truck'] := EditTruck.Text;
-      Values['Lading'] := sFlag_TiHuo;
-      Values['LineGroup'] := GetCtrlData(EditGroup);
-      Values['Memo']  := EmptyStr;
-      Values['IsVIP'] := Copy(GetCtrlData(EditType),1,1);
-      Values['Seal'] := FCardData.Values['XCB_CementCodeID'];
-      Values['HYDan'] := EditFQ.Text;
-      Values['WebOrderID'] := nWebOrderID;
-      if PrintFH.Checked  then Values['PrintFH'] := sFlag_Yes;
+      with nList do
+      begin
+        Values['Bills'] := PackerEncodeStr(nList.Text);
+        Values['ZhiKa'] := PackerEncodeStr(FCardData.Text);
+        Values['Truck'] := EditTruck.Text;
+        Values['Lading'] := sFlag_TiHuo;
+        Values['LineGroup'] := GetCtrlData(EditGroup);
+        Values['Memo']  := EmptyStr;
+        Values['IsVIP'] := Copy(GetCtrlData(EditType),1,1);
+        Values['Seal'] := FCardData.Values['XCB_CementCodeID'];
+        Values['HYDan'] := EditFQ.Text;
+        Values['WebOrderID'] := nWebOrderID;
+        Values['HdOrderId'] := EditHd.Text;
+        if PrintFH.Checked  then Values['PrintFH'] := sFlag_Yes;
+      end;
+      nBillData := PackerEncodeStr(nList.Text);
+      FBegin := Now;
+      nBillID := SaveBill(nBillData);
+      if nBillID = '' then Exit;
+      writelog('TfFormNewCard.SaveBillProxy 生成提货单['+nBillID+']-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+      FBegin := Now;
+      SaveWebOrderMatch(nBillID,nWebOrderID);
+      writelog('TfFormNewCard.SaveBillProxy 保存商城订单号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+    finally
+      nStocks.Free;
+      nList.Free;
+      nTmp.Free;
     end;
-    nBillData := PackerEncodeStr(nList.Text);
-    FBegin := Now;
-    nBillID := SaveBill(nBillData);
-    if nBillID = '' then Exit;
-    writelog('TfFormNewCard.SaveBillProxy 生成提货单['+nBillID+']-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
-    FBegin := Now;
-    SaveWebOrderMatch(nBillID,nWebOrderID);
-    writelog('TfFormNewCard.SaveBillProxy 保存商城订单号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
-  finally
-    nStocks.Free;
-    nList.Free;
-    nTmp.Free;
   end;
 
-  ShowMsg('提货单保存成功', sHint);
-
-  FBegin := Now;
   nRet := SaveBillCard(nBillID,nNewCardNo);
+  ShowMsg('提货单保存成功', sHint);
+  FBegin := Now;
+  
   if nRet then
   begin
     nRet := False;
@@ -725,6 +739,7 @@ begin
     nHint := '商城订单号['+editWebOrderNo.Text+'],卡号['+nNewCardNo+']关联订单失败，请到开票窗口重新关联。';
     WriteLog(nHint);
     ShowDlg(nHint,sHint,Self.Handle);
+    Close;
   end;
   writelog('TfFormNewCard.SaveBillProxy 发卡机出卡并关联磁卡号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');  
 

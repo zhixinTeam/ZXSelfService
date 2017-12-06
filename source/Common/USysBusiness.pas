@@ -256,6 +256,8 @@ function PrintBillFYDReport(const nBill: string;  const nAsk: Boolean): Boolean;
 //打印现场发运单
 function IFPrintFYD: Boolean;
 //是否打印
+function IFSaveBill(const nWebOrderID: string; var nLID: string): Boolean;
+//是否已经保存提货单
 
 function getCustomerInfo(const nXmlStr: string): string;
 //获取客户注册信息
@@ -790,6 +792,26 @@ begin
   if RecordCount > 0 then
        Result := Fields[0].AsString = sFlag_Yes
   else Result := False;
+end;
+
+//是否已经保存提货单
+function IFSaveBill(const nWebOrderID: string; var nLID: string): Boolean;
+var nStr: string;
+begin
+  Result := False;
+
+  nStr :='select L_Card,L_ID from %s where L_Status = ''%s'' and L_ID in '+
+         ' (Select WOM_LID From %s Where WOM_WebOrderID=''%s'' and WOM_deleted=''%s'') ';
+  nStr := Format(nStr, [sTable_Bill, sFlag_TruckNone, sTable_WebOrderMatch, nWebOrderID, sFlag_No]);
+  with FDM.QueryTemp(nStr) do
+  if RecordCount > 0 then
+  begin
+    if Length(Fields[0].AsString) > 1 then
+    begin
+      nLID := Fields[1].AsString;
+      Result := True;
+    end;
+  end;
 end;
 
 //Desc: 读取业务员列表到nList中,包含附加数据

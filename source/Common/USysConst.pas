@@ -266,6 +266,7 @@ type
     FData:string;
     Ftracknumber:string;
     FYunTianOrderId:string;//云天系统订单号
+    FHd_Order_No:string;
   end;
   //网上商城订单明细
 
