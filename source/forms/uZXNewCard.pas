@@ -69,9 +69,11 @@ type
     Label1: TLabel;
     btnClear: TcxButton;
     TimerAutoClose: TTimer;
-    dxLayout1Group2: TdxLayoutGroup;
     EditHd: TcxTextEdit;
     dxLayout1Item1: TdxLayoutItem;
+    EditHdValue: TcxTextEdit;
+    dxLayout1Item3: TdxLayoutItem;
+    dxLayout1Group5: TdxLayoutGroup;
     procedure BtnExitClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -88,8 +90,10 @@ type
     FAutoClose:Integer; //窗口自动关闭倒计时（分钟）
     FWebOrderIndex:Integer; //商城订单索引
     FWebOrderItems:array of stMallOrderItem; //商城订单数组
-    FCardData:TStrings; //云天系统返回的大票号信息
+    FCardData,FHdCardData:TStrings; //云天系统返回的大票号信息
+    FHdJiaoYan:Boolean;//袋装拼单校验结果
     Fbegin:TDateTime;
+    FLastClick: Int64;
     procedure InitListView;
     procedure SetControlsReadOnly;
     function DownloadOrder(const nCard:string):Boolean;
@@ -98,6 +102,7 @@ type
     procedure LoadSingleOrder;
     function IsRepeatCard(const nWebOrderItem:string):Boolean;
     function CheckYunTianOrderInfo(const nOrderId:string;var nWebOrderItem:stMallOrderItem):Boolean;
+    function CheckYunTianOrderHdInfo(const nHdOrderId:string; var nWebOrderItem:stMallOrderItem):Boolean;
     function do_YT_GetBatchCode(const nWebOrderItem:stMallOrderItem):Boolean;
     function VerifyCtrl(Sender: TObject; var nHint: string): Boolean;
     function SaveBillProxy:Boolean;
@@ -144,6 +149,7 @@ procedure TfFormNewCard.FormClose(Sender: TObject;
   var Action: TCloseAction);
 begin
   FCardData.Free;
+  FHdCardData.Free;
   Action:=  caFree;
   fFormNewCard := nil;
 end;
@@ -228,6 +234,7 @@ begin
             +'<head>'
             +'<Factory>%s</Factory>'
             +'      <NO>%s</NO>'
+            +'      <status>-1</status>'  //-1  开卡    0  开卡成功
             +'</head>'
             +'</DATA>';
 
@@ -272,6 +279,7 @@ begin
       FWebOrderItems[i].Ftracknumber := nListB.Values['tracknumber'];
       FWebOrderItems[i].FYunTianOrderId := nListB.Values['fac_order_no'];
       FWebOrderItems[i].FHd_Order_no := nListB.Values['hd_fac_order_no'];
+      FWebOrderItems[i].Fspare := nListB.Values['spare'];
       AddListViewItem(FWebOrderItems[i]);
     end;
   finally
@@ -330,6 +338,7 @@ procedure TfFormNewCard.FormCreate(Sender: TObject);
 begin
   editWebOrderNo.Properties.MaxLength := gSysParam.FWebOrderLength;
   FCardData := TStringList.Create;
+  FHdCardData := TStringList.Create;
   if not Assigned(FDR) then
   begin
     FDR := TFDR.Create(Application);
@@ -345,6 +354,7 @@ var
   nWebOrderID:string;
   nMsg:string;
 begin
+  FHdJiaoYan := False;
   nOrderItem := FWebOrderItems[FWebOrderIndex];
   nWebOrderID := nOrderItem.FOrdernumber;
 
@@ -361,10 +371,15 @@ begin
   writelog('TfFormNewCard.LoadSingleOrder 检查商城订单是否重复使用-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
   //订单有效性校验
   FBegin := Now;
-  if not CheckYunTianOrderInfo(nOrderItem.FYunTianOrderId,nOrderItem) then
+  if not CheckYunTianOrderInfo(nOrderItem.FYunTianOrderId, nOrderItem) then
   begin
     BtnOK.Enabled := False;
     Exit;
+  end;
+
+  if (nOrderItem.FHd_Order_No <> '-1') and (Pos('袋',nOrderItem.FGoodsname) > 0) then
+  begin
+    if CheckYunTianOrderHdInfo(nOrderItem.FHd_Order_No, nOrderItem) then FHdJiaoYan := True;
   end;
   writelog('TfFormNewCard.LoadSingleOrder 订单有效性校验-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
 
@@ -383,7 +398,8 @@ begin
   EditValue.Text := nOrderItem.FData;
   EditTruck.Text := nOrderItem.Ftracknumber;
   EditHd.Text    := nOrderItem.FHd_Order_No;
-  
+  EditHdValue.Text:= nOrderItem.Fspare;
+
   if gSysParam.FShuLiaoNeedBatchCode then
   begin
     FBegin := Now;
@@ -449,7 +465,7 @@ begin
   if nWebOrderItem.FGoodsID<>nYuntianOrderItem.FGoodsID then
   begin
     nMsg := '商城订单中产品型号[%s]有误。';
-    nMsg := Format(nMsg,[nWebOrderItem.FOrder_id]);
+    nMsg := Format(nMsg,[nWebOrderItem.FGoodsID]);
     ShowMsg(nMsg,sError);
     Writelog(nMsg);
     Exit;
@@ -486,6 +502,77 @@ begin
   Result := True;  
 end;
 
+function TfFormNewCard.CheckYunTianOrderHdInfo(const nHdOrderId:string; var nWebOrderItem:stMallOrderItem):Boolean;
+var
+  nCardDataStr: string;
+  nIn: TWorkerBusinessCommand;
+  nOut: TWorkerBusinessCommand;
+  nYuntianOrderItem:stMallOrderItem;
+  nMsg:string;
+  nOrderNumberWeb,nOrderNumberYT:Double;
+begin
+  Result := False;
+  FHdCardData.Clear;
+
+  nCardDataStr := nHdOrderId;
+  if not (YT_ReadCardInfo(nCardDataStr) and YT_VerifyCardInfo(nCardDataStr)) then
+  begin
+    ShowMsg(nCardDataStr,sHint);
+    Writelog(nCardDataStr);
+    Exit;
+  end;
+
+  FHdCardData.Text := PackerDecodeStr(nCardDataStr);
+
+  with nYuntianOrderItem, FHdCardData do
+  begin
+    FGoodsID := Values['XCB_Cement'];
+    FGoodsname := Values['XCB_CementName'];
+    FOrdernumber := Values['XCB_RemainNum'];
+    FCusID := Values['XCB_Client'];
+    FCusName := Values['XCB_ClientName'];
+  end;
+
+  if nWebOrderItem.FGoodsID<>nYuntianOrderItem.FGoodsID then
+  begin
+    nMsg := '商城订单中拼单产品型号[%s]有误。';
+    nMsg := Format(nMsg,[nWebOrderItem.FGoodsID]);
+    ShowMsg(nMsg,sError);
+    Writelog(nMsg);
+    Exit;
+  end;
+
+  if nWebOrderItem.FGoodsname<>nYuntianOrderItem.FGoodsname then
+  begin
+    nMsg := '商城订单中拼单产品名称[%s]有误。';
+    nMsg := Format(nMsg,[nWebOrderItem.FGoodsname]);
+    ShowMsg(nMsg,sError);
+    Writelog(nMsg);
+    Exit;
+  end;
+
+  nOrderNumberWeb := StrToFloatDef(nWebOrderItem.Fspare,0);
+  nOrderNumberYT := StrToFloatDef(nYuntianOrderItem.FOrdernumber,0);
+
+  if (nOrderNumberWeb<=0.00001) or (nOrderNumberYT<=0.00001) then
+  begin
+    nMsg := '订单中拼单提货数量格式有误。';
+    ShowMsg(nMsg,sError);
+    Writelog(nMsg);
+    Exit;
+  end;
+
+  if nOrderNumberWeb-nOrderNumberYT>0.00001 then
+  begin
+    nMsg := '商城订单中拼单提货数量有误，最多可提货数量为[%f]。';
+    nMsg := Format(nMsg,[nOrderNumberYT]);
+    ShowMsg(nMsg,sError);
+    Writelog(nMsg);
+    Exit;
+  end;
+  Result := True;  
+end;
+
 function TfFormNewCard.do_YT_GetBatchCode(
   const nWebOrderItem: stMallOrderItem): Boolean;
 var
@@ -506,6 +593,7 @@ begin
     nInList.Values['XCB_Cement'] := nWebOrderItem.FGoodsID;
     nInList.Values['Value'] := nWebOrderItem.FData;
     nOutList.Text := YT_GetBatchCode(nInList);
+
     if (nOutList.Values['XCB_CementCode']='')
       or (nOutList.Values['XCB_CementCodeID']='') then Exit;
     FCardData.Values['XCB_CementCode'] := nOutList.Values['XCB_CementCode'];
@@ -592,7 +680,7 @@ var
   nList,nTmp,nStocks: TStrings;
   nPrint,nInFact:Boolean;
   nBillData:string;
-  nBillID :string;
+  nBillID,nHdBillID :string;
   nWebOrderID:string;
   nNewCardNo:string;
   nidx:Integer;
@@ -655,9 +743,14 @@ begin
       ShowDlg('卡箱异常,请查看是否有卡.', sWarn, Self.Handle);
       Exit;
     end;
-
+    Writelog('ReadCard: ' + nNewCardNo);
     nNewCardNo := gMgrK720Reader.ParseCardNO(nNewCardNo);
-    WriteLog(nNewCardNo);
+    WriteLog('ParseCardNO: ' + nNewCardNo);
+    if nNewCardNo = '' then
+    begin
+      ShowDlg('卡号异常,解析失败.', sWarn, Self.Handle);
+      Exit;
+    end;
     //解析卡片
     writelog('TfFormNewCard.SaveBillProxy 发卡机读卡-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
   end;
@@ -741,7 +834,63 @@ begin
     ShowDlg(nHint,sHint,Self.Handle);
     Close;
   end;
-  writelog('TfFormNewCard.SaveBillProxy 发卡机出卡并关联磁卡号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');  
+  writelog('TfFormNewCard.SaveBillProxy 发卡机出卡并关联磁卡号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+
+  if FHdJiaoYan then
+  begin
+    nStocks := TStringList.Create;
+    nList := TStringList.Create;
+    nTmp := TStringList.Create;
+    try
+      LoadSysDictItem(sFlag_PrintBill, nStocks);
+
+      nTmp.Values['Type'] := FHdCardData.Values['XCB_CementType'];
+      nTmp.Values['StockNO'] := FHdCardData.Values['XCB_Cement'];
+      nTmp.Values['StockName'] := FHdCardData.Values['XCB_CementName'];
+      nTmp.Values['Price'] := '0.00';
+      nTmp.Values['Value'] := EditHdValue.Text;
+
+      nList.Add(PackerEncodeStr(nTmp.Text));
+      nPrint := nStocks.IndexOf(FHdCardData.Values['XCB_Cement']) >= 0;
+
+      with nList do
+      begin
+        Values['Bills'] := PackerEncodeStr(nList.Text);
+        Values['ZhiKa'] := PackerEncodeStr(FHdCardData.Text);
+        Values['Truck'] := EditTruck.Text;
+        Values['Lading'] := sFlag_TiHuo;
+        Values['LineGroup'] := GetCtrlData(EditGroup);
+        Values['Memo']  := EmptyStr;
+        Values['IsVIP'] := Copy(GetCtrlData(EditType),1,1);
+        Values['Seal'] := FHdCardData.Values['XCB_CementCodeID'];
+        Values['HYDan'] := EditFQ.Text;
+        Values['WebOrderID'] := nWebOrderID;
+        if PrintFH.Checked  then Values['PrintFH'] := sFlag_Yes;
+      end;
+      nBillData := PackerEncodeStr(nList.Text);
+      FBegin := Now;
+      nHdBillID := SaveBill(nBillData);
+      if nHdBillID = '' then Exit;
+      writelog('TfFormNewCard.SaveBillProxy 生成拼单提货单['+nHdBillID+']-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+      FBegin := Now;
+      SaveWebOrderMatch(nHdBillID,nWebOrderID);
+      writelog('TfFormNewCard.SaveBillProxy 保存商城订单号-耗时：'+InttoStr(MilliSecondsBetween(Now, FBegin))+'ms');
+    finally
+      nStocks.Free;
+      nList.Free;
+      nTmp.Free;
+    end;
+
+    if SaveBillCard(nHdBillID,nNewCardNo) then
+    begin
+      ShowMsg('拼单提货单关联磁卡成功', sHint);
+      Writelog('拼单提货单[' + nHdBillID +'关联磁卡号[' + nNewCardNo +']成功');
+    end else
+    begin
+      ShowMsg('拼单提货单关联磁卡失败', sHint);
+      Writelog('拼单提货单[' + nHdBillID +'关联磁卡号[' + nNewCardNo +']失败');
+    end;
+  end;
 
   if nPrint then
     PrintBillReport(nBillID, True);
@@ -775,6 +924,12 @@ var
   nSelItem:TListItem;
   i:Integer;
 begin
+  if (GetTickCount - FLastClick < 3 * 1000) then
+  begin
+    ShowMsg('请不要频繁点击！', sHint);
+    Exit;
+  end;
+  
   nSelItem := lvorders.Selected;
   if Assigned(nSelItem) then
   begin
@@ -788,6 +943,7 @@ begin
       end;
     end;
   end;
+  FLastClick := GetTickCount;
 end;
 
 procedure TfFormNewCard.editWebOrderNoKeyPress(Sender: TObject;
@@ -797,6 +953,7 @@ begin
   if Key=Char(vk_return) then
   begin
     key := #0;
+    btnQuery.SetFocus;
     btnQuery.Click;
   end;
 end;

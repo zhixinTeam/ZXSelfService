@@ -166,6 +166,7 @@ begin
   if Key=Char(vk_return) then
   begin
     key := #0;
+    BtnOK.SetFocus;
     btnok.Click;
   end;
 end;

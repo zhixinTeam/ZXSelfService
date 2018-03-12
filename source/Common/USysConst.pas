@@ -257,7 +257,7 @@ type
   PMallOrderItem = ^stMallOrderItem;
   stMallOrderItem = record
     FCusID:string;
-    FCusName:string;  
+    FCusName:string;
     FOrder_id:string;
     FOrdernumber:string;
     FGoodsID:string;
@@ -267,6 +267,7 @@ type
     Ftracknumber:string;
     FYunTianOrderId:string;//云天系统订单号
     FHd_Order_No:string;
+    Fspare:string;
   end;
   //网上商城订单明细
 

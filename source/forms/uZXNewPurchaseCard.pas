@@ -652,6 +652,7 @@ begin
   if Key=Char(vk_return) then
   begin
     key := #0;
+    btnQuery.SetFocus;
     btnQuery.Click;
   end;
 end;

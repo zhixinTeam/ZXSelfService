@@ -10,7 +10,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, cxGraphics, cxControls, cxLookAndFeels, cxLookAndFeelPainters,
   cxContainer, cxEdit, cxLabel, ExtCtrls, CPort, StdCtrls, Buttons,Uszttce_api,
-  UHotKeyManager,uReadCardThread;
+  UHotKeyManager,uReadCardThread, UTransPanel;
 
 type
   TCardType = (ctTTCE,ctRFID);
@@ -35,6 +35,8 @@ type
     imgCard: TImage;
     ImageSep: TImage;
     imgPurchaseCard: TImage;
+    ImgBackGround: TImage;
+    ImgBottom: TImage;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComPort1RxChar(Sender: TObject; Count: Integer);
@@ -44,6 +46,7 @@ type
     procedure imgPrintClick(Sender: TObject);
     procedure imgCardClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
     FBuffer: string;
@@ -162,7 +165,7 @@ begin
   if not Assigned(FDR) then
   begin
     FDR := TFDR.Create(Application);
-  end;  
+  end;
 end;
 
 procedure TfFormMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -316,10 +319,11 @@ end;
 //Parm: 卡号
 //Desc: 查询nCard信息
 procedure TfFormMain.QueryCard(const nCard: string);
-var nVal: Double;
+var nVal,nTotalVal: Double;
     nStr,nStock,nBill,nVip,nLine,nPoundQueue,nTruck: string;
     nDate: TDateTime;
     nBeginTotal:TDateTime;
+    nZhiKa:string;
 begin
 //  mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
 //  mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
@@ -331,6 +335,8 @@ begin
     Exit;
   end;
 
+  nZhiKa := '';
+  nTotalVal := 0;
   nBeginTotal := Now;
   try
     FTimeCounter := 10;
@@ -358,7 +364,9 @@ begin
           nBill := FieldByName('L_ID').AsString;
           nVal := FieldByName('L_Value').AsFloat;
         end;
-
+        nZhiKa := nZhiKa + FieldByName('L_ZhiKa').AsString + ',';
+        nTotalVal := nTotalVal + FieldByName('L_Value').AsFloat;
+        
         Next;
       end;
 
@@ -376,12 +384,13 @@ begin
       nStock := FieldByName('L_StockNo').AsString;
       FHYDan := FieldByName('L_HYDan').AsString;
       FStockName := FieldByName('L_StockName').AsString;
-
+      
+      nZhiKa := Copy(nZhiKa, 1,Length(nZhiKa)-1);
       LabelBill.Caption := '交货单号: ' + FieldByName('L_ID').AsString;
-      LabelOrder.Caption := '销售订单: ' + FieldByName('L_ZhiKa').AsString;
+      LabelOrder.Caption := '销售订单: ' + nZhiKa;
       LabelTruck.Caption := '车牌号码: ' + FieldByName('L_Truck').AsString;
       LabelStock.Caption := '品种名称: ' + FieldByName('L_StockName').AsString;
-      LabelTon.Caption := '提货数量: ' + FieldByName('L_Value').AsString + '吨';
+      LabelTon.Caption := '提货数量: ' + FormatFloat('0.00', nTotalVal) + '吨';
     end;
     WriteLog('TfFormMain.QueryCard(nCard='''+nCard+''')查询提货单[nStr]-耗时：'+InttoStr(MilliSecondsBetween(Now, nBeginTotal))+'ms');
     //--------------------------------------------------------------------------
@@ -605,6 +614,7 @@ var
   nFileName:string;
   nLeft,nTop,nWidth,nHeight:Integer;
   nItemHeigth:Integer;
+  R,G,B:Integer;
 begin
   nFileName := ExtractFilePath(ParamStr(0))+'Config.Ini';
   if not FileExists(nFileName) then
@@ -640,6 +650,17 @@ begin
     self.Height := nHeight;
 
     imgPrint.Left := self.Width-imgprint.Width;
+
+    R := nIni.ReadInteger('TextColor','R',255);
+    G := nIni.ReadInteger('TextColor','G',255);
+    B := nIni.ReadInteger('TextColor','B',255);
+    LabelTruck.Style.TextColor := RGB(R,G,B);
+    LabelOrder.Style.TextColor := RGB(R,G,B);
+    LabelBill.Style.TextColor := RGB(R,G,B);
+    LabelTon.Style.TextColor := RGB(R,G,B);
+    LabelStock.Style.TextColor := RGB(R,G,B);
+    LabelNum.Style.TextColor := RGB(R,G,B);
+    LabelHint.Style.TextColor := RGB(R,G,B);
   finally
     nIni.Free;
   end;
@@ -687,6 +708,15 @@ begin
       WriteLog(E.Message);
     end;
   end;
+end;
+
+procedure TfFormMain.FormShow(Sender: TObject);
+begin
+  ImgBackGround.Left := 0;
+  ImgBackGround.Top := 0;
+  ImgBackGround.Width := Screen.Width;
+  ImgBackGround.Height := Screen.Height;
+  ImgBackGround.Picture.LoadFromFile('.\Images\BackGround.jpg');
 end;
 
 end.

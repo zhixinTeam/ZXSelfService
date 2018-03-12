@@ -7,7 +7,9 @@ uses
   UWorkerBussinessWebchat,
   UDataModule in 'forms\UDataModule.pas' {FDM: TDataModule},
   UFormMain in 'forms\UFormMain.pas' {fFormMain},
-  uReadCardThread in 'uReadCardThread.pas';
+  uReadCardThread in 'uReadCardThread.pas',
+  UFormBase in 'forms\UFormBase.pas' {BaseForm},
+  UFormNormal in 'forms\UFormNormal.pas' {fFormNormal};
 
 {$R *.res}
 

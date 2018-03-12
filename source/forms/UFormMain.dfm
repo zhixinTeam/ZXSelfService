@@ -1,6 +1,6 @@
 object fFormMain: TfFormMain
-  Left = 529
-  Top = 23
+  Left = 485
+  Top = 0
   BorderStyle = bsNone
   Caption = #29992#25143#33258#21161#26597#35810#31995#32479
   ClientHeight = 674
@@ -16,8 +16,16 @@ object fFormMain: TfFormMain
   OnClose = FormClose
   OnCreate = FormCreate
   OnResize = FormResize
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 56
+  object ImgBackGround: TImage
+    Left = 0
+    Top = 0
+    Width = 829
+    Height = 104
+    Stretch = True
+  end
   object LabelStock: TcxLabel
     Left = 0
     Top = 380
@@ -191,6 +199,13 @@ object fFormMain: TfFormMain
       ParentColor = True
       ParentFont = False
       TabOrder = 0
+      object ImgBottom: TImage
+        Left = 2
+        Top = 46
+        Width = 105
+        Height = 105
+        Visible = False
+      end
       object LabelHint: TcxLabel
         Left = 0
         Top = 0

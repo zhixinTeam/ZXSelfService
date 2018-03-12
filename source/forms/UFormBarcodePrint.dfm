@@ -31,7 +31,7 @@ inherited fFormBarcodePrint: TfFormBarcodePrint
       TabOrder = 5
     end
     object editWebOrderNo: TcxTextEdit [2]
-      Left = 24
+      Left = 90
       Top = 29
       ParentFont = False
       Properties.OnChange = editWebOrderNoPropertiesChange
