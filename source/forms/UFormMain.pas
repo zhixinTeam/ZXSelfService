@@ -88,7 +88,7 @@ uses
   IniFiles, ULibFun, CPortTypes, USysLoger, USysDB, USmallFunc, UDataModule,
   UFormConn, uZXNewCard,USysConst,UClientWorker,UMITPacker,USysModule,USysBusiness,
   UDataReport,UFormInputbox, uZXNewPurchaseCard,UFormBarcodePrint,
-  UFormBase,DateUtils;
+  UFormBase,DateUtils,IdGlobal;
 
 type
   TReaderType = (ptT800, pt8142);
@@ -268,7 +268,7 @@ begin
 end;
 
 procedure TfFormMain.ComPort1RxChar(Sender: TObject; Count: Integer);
-var nStr: string;
+var nStr,nScard: string;
     nIdx,nLen: Integer;
     nCardno:string;
     nSql:string;
@@ -278,6 +278,11 @@ begin
 
   nLen := Length(FBuffer);
   if nLen < 7 then Exit;
+  for nIdx:=1 to nLen do
+  begin
+    nScard := nScard + Chr(Ord(FBuffer[nIdx])) + ',';
+  end;
+  WriteLog('¿¨ºÅ: ' + nScard);
 
   for nIdx:=1 to nLen do
   begin
@@ -286,9 +291,10 @@ begin
 
     nStr := Copy(FBuffer, nIdx+3, 4);
     FBuffer := '';
-    WriteLog('ComPort1RxChar:'+ParseCardNO(nStr, True));
+    WriteLog('ComPort1RxChar:'+ParseCardNO(nStr, True, nScard));
+    WriteLog('Ô­Ê¼¿¨ºÅ£º' + nScard);
     FCardType := ctRFID;
-    nCardno := ParseCardNO(nStr, True);
+    nCardno := ParseCardNO(nStr, True, nScard);
     nSql := 'select * from %s where c_card=''%s''';
     nSql := Format(nSql,[sTable_Card,nCardno]);
     with FDM.QuerySQL(nSql) do
